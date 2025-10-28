@@ -1,98 +1,225 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons"; // Cambio aquí
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+import axios from "axios";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+export default function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-export default function HomeScreen() {
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Por favor ingresa tu correo y contraseña");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.post("http://192.168.1.169:8000/api/auth/login", { email, password });
+      
+      if (response.data.success) {
+        await AsyncStorage.setItem("userSession", JSON.stringify(response.data.data));
+        Alert.alert("Bienvenido", `Hola ${response.data.data.nombre}`);
+        // redirigir al dashboard - puedes usar:
+        // router.replace("/dashboard");
+      } else {
+        Alert.alert("Error", response.data.message || "Credenciales incorrectas");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "No se pudo conectar al servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <LinearGradient colors={["#f0f4ff", "#ffffff"]} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Iniciar Sesión</Text>
+          <Text style={styles.subtitle}>Ingresa tus credenciales para acceder</Text>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="#555" style={styles.icon} />
+            <TextInput
+              placeholder="correo@ejemplo.com"
+              style={styles.input}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#555" style={styles.icon} />
+            <TextInput
+              placeholder="Ingresa tu contraseña"
+              style={styles.input}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons 
+                name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                size={20} 
+                color="#555" 
+                style={styles.iconRight} 
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity 
+            style={[
+              styles.button, 
+              loading && styles.buttonDisabled
+            ]} 
+            onPress={handleLogin} 
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Iniciar Sesión</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.linksContainer}>
+            <TouchableOpacity>
+              <Text style={styles.link}>Regístrate aquí</Text>
+            </TouchableOpacity>
+            <Text style={{ marginHorizontal: 5 }}>•</Text>
+            <TouchableOpacity>
+              <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.orText}>O CONTINÚA CON</Text>
+
+          <TouchableOpacity style={styles.googleButton}>
+            <Ionicons name="logo-google" size={20} color="#000" />
+            <Text style={styles.googleButtonText}>Google</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.legalText}>
+            Al continuar, aceptas recibir llamadas, mensajes de WhatsApp o SMS realizados por Recupera Gastos y sus afiliadas.
+          </Text>
+        </View>
+
+        <Text style={styles.footerText}>Plataforma segura para la gestión de gastos empresariales</Text>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: { flex: 1 },
+  scrollContainer: { 
+    flexGrow: 1, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    paddingVertical: 40 
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  card: {
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  title: { 
+    fontSize: 22, 
+    fontWeight: "bold", 
+    textAlign: "center",
+    marginBottom: 5 
+  },
+  subtitle: { 
+    fontSize: 14, 
+    color: "#666", 
+    textAlign: "center", 
+    marginBottom: 20 
+  },
+  inputContainer: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    borderWidth: 1, 
+    borderColor: "#ddd", 
+    borderRadius: 8, 
+    marginBottom: 15, 
+    paddingHorizontal: 10 
+  },
+  icon: { marginRight: 8 },
+  iconRight: { marginLeft: 8 },
+  input: { 
+    flex: 1, 
+    height: 40, 
+    color: "#000" 
+  },
+  button: { 
+    backgroundColor: "#1A2A6C", 
+    paddingVertical: 12, 
+    borderRadius: 8, 
+    alignItems: "center", 
+    marginTop: 10 
+  },
+  buttonDisabled: {
+    opacity: 0.6
+  },
+  buttonText: { 
+    color: "#fff", 
+    fontWeight: "bold", 
+    fontSize: 16 
+  },
+  linksContainer: { 
+    flexDirection: "row", 
+    justifyContent: "center", 
+    marginTop: 10 
+  },
+  link: { 
+    color: "#1A2A6C", 
+    textDecorationLine: "underline" 
+  },
+  orText: { 
+    textAlign: "center", 
+    color: "#888", 
+    marginVertical: 15, 
+    fontSize: 12 
+  },
+  googleButton: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    borderWidth: 1, 
+    borderColor: "#ddd", 
+    borderRadius: 8, 
+    paddingVertical: 10 
+  },
+  googleButtonText: { 
+    marginLeft: 8, 
+    fontWeight: "bold", 
+    color: "#000" 
+  },
+  legalText: { 
+    fontSize: 10, 
+    color: "#888", 
+    textAlign: "center", 
+    marginTop: 10 
+  },
+  footerText: { 
+    fontSize: 12, 
+    color: "#888", 
+    textAlign: "center", 
+    marginTop: 20 
   },
 });
