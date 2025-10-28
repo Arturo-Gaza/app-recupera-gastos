@@ -7,202 +7,185 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-
-
-// Simulación del login al backend
-import { login } from "../app/services/authService";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+import axios from "axios";
 
 export default function LoginScreen() {
-  const navigation = useNavigation<any>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Por favor completa todos los campos");
+      Alert.alert("Error", "Por favor ingresa tu correo y contraseña");
       return;
     }
 
-    setIsLoading(true);
     try {
-      const response = await login({ email, password });
+      setLoading(true);
+      const response = await axios.post("http://192.168.1.169:8000/api/auth/login", {
+        email,
+        password,
+      });
 
-      if (response.success) {
-        // Guarda la sesión en almacenamiento local
-        await AsyncStorage.setItem("token", response.token);
-        await AsyncStorage.setItem("user", JSON.stringify(response.data));
-
-        Alert.alert("Bienvenido", response.message);
-        navigation.replace("Dashboard");
+      if (response.data.success) {
+        await AsyncStorage.setItem("userSession", JSON.stringify(response.data.data));
+        Alert.alert("Bienvenido", `Hola ${response.data.data.nombre}`);
+        router.replace("/(tabs)"); // 👈 Redirige al dashboard
       } else {
-        Alert.alert(
-          "Error de autenticación",
-          response.message || "Credenciales incorrectas"
-        );
+        Alert.alert("Error", response.data.message || "Credenciales incorrectas");
       }
     } catch (error) {
-      Alert.alert("Error", "No se pudo conectar con el servidor");
+      console.error(error);
+      Alert.alert("Error", "No se pudo conectar al servidor");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    Alert.alert(
-      "Próximamente",
-      "El inicio de sesión con Google estará disponible pronto."
-    );
-  };
-
   return (
-    <LinearGradient colors={["#f5f7fa", "#c3cfe2"]} style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Iniciar Sesión</Text>
-        <Text style={styles.subtitle}>
-          Ingresa tus credenciales para acceder
-        </Text>
+    <LinearGradient colors={["#f0f4ff", "#ffffff"]} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Iniciar Sesión</Text>
+          <Text style={styles.subtitle}>Ingresa tus credenciales para acceder</Text>
 
-        {/* Email */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="mail-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            placeholder="correo@ejemplo.com"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
-        {/* Password */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            placeholder="Ingresa tu contraseña"
-            value={password}
-            onChangeText={setPassword}
-            style={styles.input}
-            secureTextEntry={!showPassword}
-          />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Ionicons
-              name={showPassword ? "eye-off-outline" : "eye-outline"}
-              size={20}
-              color="#666"
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="#555" style={styles.icon} />
+            <TextInput
+              placeholder="correo@ejemplo.com"
+              style={styles.input}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
             />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#555" style={styles.icon} />
+            <TextInput
+              placeholder="Ingresa tu contraseña"
+              style={styles.input}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color="#555"
+                style={styles.iconRight}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Iniciar Sesión</Text>
+            )}
           </TouchableOpacity>
-        </View>
 
-        {/* Botón login */}
-        <TouchableOpacity
-          style={[styles.button, isLoading && { opacity: 0.6 }]}
-          onPress={handleSubmit}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Iniciar Sesión</Text>
-          )}
-        </TouchableOpacity>
+          <View style={styles.linksContainer}>
+            <TouchableOpacity onPress={() => router.push("/register")}>
+              {/* 👆 Redirige al registro */}
+              <Text style={styles.link}>Regístrate aquí</Text>
+            </TouchableOpacity>
+            <Text style={{ marginHorizontal: 5 }}>•</Text>
+            <TouchableOpacity>
+              <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Registro / Recuperar */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>¿No tienes cuenta?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-            <Text style={styles.link}> Regístrate aquí</Text>
+          <Text style={styles.orText}>O CONTINÚA CON</Text>
+
+          <TouchableOpacity style={styles.googleButton}>
+            <Ionicons name="logo-google" size={20} color="#000" />
+            <Text style={styles.googleButtonText}>Google</Text>
           </TouchableOpacity>
+
+          <Text style={styles.legalText}>
+            Al continuar, aceptas recibir llamadas, mensajes de WhatsApp o SMS
+            realizados por Recupera Gastos y sus afiliadas.
+          </Text>
         </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
-          <Text style={styles.linkCenter}>¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
-
-        {/* Divider */}
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.dividerText}>O continúa con</Text>
-          <View style={styles.line} />
-        </View>
-
-        {/* Google */}
-        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-          <Ionicons name="logo-google" size={20} color="#000" />
-          <Text style={styles.googleText}>Google</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.terms}>
-          Al continuar, aceptas recibir llamadas, mensajes o correos de Recupera
-          Gastos y sus afiliadas.
+        <Text style={styles.footerText}>
+          Plataforma segura para la gestión de gastos empresariales
         </Text>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  card: {
-    width: "85%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    elevation: 6,
+  container: { flex: 1 },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
   },
-  title: { fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 5 },
-  subtitle: { fontSize: 14, color: "#555", textAlign: "center", marginBottom: 20 },
+  card: {
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  title: { fontSize: 22, fontWeight: "bold", textAlign: "center", marginBottom: 5 },
+  subtitle: { fontSize: 14, color: "#666", textAlign: "center", marginBottom: 20 },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#ccc",
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
+    borderColor: "#ddd",
+    borderRadius: 8,
     marginBottom: 15,
+    paddingHorizontal: 10,
   },
   icon: { marginRight: 8 },
-  input: { flex: 1, height: 45 },
+  iconRight: { marginLeft: 8 },
+  input: { flex: 1, height: 40, color: "#000" },
   button: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#1A2A6C",
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: "center",
     marginTop: 10,
   },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  footer: { flexDirection: "row", justifyContent: "center", marginTop: 15 },
-  footerText: { color: "#555" },
-  link: { color: "#007BFF", fontWeight: "600" },
-  linkCenter: {
-    color: "#007BFF",
-    textAlign: "center",
-    marginTop: 10,
-    fontWeight: "600",
-  },
-  divider: { flexDirection: "row", alignItems: "center", marginVertical: 20 },
-  line: { flex: 1, height: 1, backgroundColor: "#ccc" },
-  dividerText: { marginHorizontal: 10, color: "#666", fontSize: 12 },
+  linksContainer: { flexDirection: "row", justifyContent: "center", marginTop: 10 },
+  link: { color: "#1A2A6C", textDecorationLine: "underline" },
+  orText: { textAlign: "center", color: "#888", marginVertical: 15, fontSize: 12 },
   googleButton: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
-    borderColor: "#ccc",
     borderWidth: 1,
-    borderRadius: 10,
+    borderColor: "#ddd",
+    borderRadius: 8,
     paddingVertical: 10,
   },
-  googleText: { marginLeft: 8, color: "#000" },
-  terms: {
-    fontSize: 11,
-    color: "#888",
-    textAlign: "center",
-    marginTop: 20,
-  },
+  googleButtonText: { marginLeft: 8, fontWeight: "bold", color: "#000" },
+  legalText: { fontSize: 10, color: "#888", textAlign: "center", marginTop: 10 },
+  footerText: { fontSize: 12, color: "#888", textAlign: "center", marginTop: 20 },
 });
