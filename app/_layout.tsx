@@ -15,8 +15,29 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        {/* Login será la pantalla inicial */}
+        <Stack.Screen 
+          name="login" 
+          options={{ headerShown: false }} 
+        />
+
+        {/* Register también sin header */}
+        <Stack.Screen 
+          name="register" 
+          options={{ headerShown: false }} 
+        />
+
+        {/* Pantalla principal con tabs */}
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ headerShown: true }} 
+        />
+
+        {/* Modal opcional */}
+        <Stack.Screen 
+          name="modal" 
+          options={{ presentation: 'modal', title: 'Modal' }} 
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

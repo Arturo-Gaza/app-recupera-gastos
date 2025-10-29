@@ -13,7 +13,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import axios from "axios";
+import requests from "@/app/services/requests";
+import { LOGIN } from "@/app/services/apiConstans";
+import { styles } from "@/app/styles/LoginStyles"
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -21,28 +23,48 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Por favor ingresa tu correo y contraseña");
-      return;
-    }
-
+  const handleLogin = async (email: string, password: string, setLoading: (val: boolean) => void) => {
     try {
       setLoading(true);
-      const response = await axios.post("http://192.168.1.169:8000/api/auth/login", {
-        email,
-        password,
+  
+      const response = await requests.post({
+        command: LOGIN,
+        data: { email, password },
       });
-
-      if (response.data.success) {
-        await AsyncStorage.setItem("userSession", JSON.stringify(response.data.data));
-        Alert.alert("Bienvenido", `Hola ${response.data.data.nombre}`);
-        router.replace("/(tabs)"); // 👈 Redirige al dashboard
+  
+      const { data } = response;
+  
+      if (data?.success) {
+        const dataSST = {
+          SesionSST: true,
+          TokenSST: data.token || "",
+          IdUsuarioSST: data.data.id || 0,
+          NombreSST: data.data.nombre || "",
+          ApellidoPSST: data.data.primer_apellido || "",
+          ApellidoMSST: data.data.segundo_apellido || "",
+          CorreoSST: data.data.email || "",
+          RolSST: data.data.rol || "",
+          IdRolSST: data.data.id_rol || "",
+          TelefonoSST: data.data.telefono || "",
+          IdDepartamentoSST: data.data.id_departamento || "",
+          DepartamentoSST: data.data.departamento || "",
+          SaldoSST: data.data.saldo || "",
+          DatosCompletosSST: data.data.datosCompletos || false,
+          tienDatoFiscalSST: data.data.tienDatoFiscal || false,
+          Password_temporalSST: data.data.password_temporal || false,
+          tieneSuscripcionActivaSST: data.data.tieneSuscripcionActiva || false,
+        };
+  
+        // Guardar en AsyncStorage
+        await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(dataSST));
+        
+        Alert.alert("Bienvenido", `Hola ${data.data.nombre}`);
+        router.replace("/(tabs)");
       } else {
-        Alert.alert("Error", response.data.message || "Credenciales incorrectas");
+        Alert.alert("Error", data?.message || "Credenciales incorrectas");
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Error en login:", error);
       Alert.alert("Error", "No se pudo conectar al servidor");
     } finally {
       setLoading(false);
@@ -89,7 +111,7 @@ export default function LoginScreen() {
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
+            onPress={() => handleLogin(email, password, setLoading)} 
             disabled={loading}
           >
             {loading ? (
@@ -101,7 +123,7 @@ export default function LoginScreen() {
 
           <View style={styles.linksContainer}>
             <TouchableOpacity onPress={() => router.push("/register")}>
-              {/* 👆 Redirige al registro */}
+              {/*Redirige al registro */}
               <Text style={styles.link}>Regístrate aquí</Text>
             </TouchableOpacity>
             <Text style={{ marginHorizontal: 5 }}>•</Text>
@@ -131,61 +153,3 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  card: {
-    width: "90%",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  title: { fontSize: 22, fontWeight: "bold", textAlign: "center", marginBottom: 5 },
-  subtitle: { fontSize: 14, color: "#666", textAlign: "center", marginBottom: 20 },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-  },
-  icon: { marginRight: 8 },
-  iconRight: { marginLeft: 8 },
-  input: { flex: 1, height: 40, color: "#000" },
-  button: {
-    backgroundColor: "#1A2A6C",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  linksContainer: { flexDirection: "row", justifyContent: "center", marginTop: 10 },
-  link: { color: "#1A2A6C", textDecorationLine: "underline" },
-  orText: { textAlign: "center", color: "#888", marginVertical: 15, fontSize: 12 },
-  googleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingVertical: 10,
-  },
-  googleButtonText: { marginLeft: 8, fontWeight: "bold", color: "#000" },
-  legalText: { fontSize: 10, color: "#888", textAlign: "center", marginTop: 10 },
-  footerText: { fontSize: 12, color: "#888", textAlign: "center", marginTop: 20 },
-});
