@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Image
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +17,7 @@ import { router } from "expo-router";
 import requests from "@/app/services/requests";
 import { LOGIN } from "@/app/services/apiConstans";
 import { styles } from "@/app/styles/LoginStyles"
+
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -26,14 +28,14 @@ export default function LoginScreen() {
   const handleLogin = async (email: string, password: string, setLoading: (val: boolean) => void) => {
     try {
       setLoading(true);
-  
+
       const response = await requests.post({
         command: LOGIN,
         data: { email, password },
-});
-  
+      });
+
       const { data } = response;
-  
+
       if (data?.success) {
         const dataSST = {
           SesionSST: true,
@@ -54,11 +56,11 @@ export default function LoginScreen() {
           Password_temporalSST: data.data.password_temporal || false,
           tieneSuscripcionActivaSST: data.data.tieneSuscripcionActiva || false,
         };
-  
+
         // Guardar en AsyncStorage
         await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(dataSST));
-        
-        Alert.alert("Bienvenido", `Hola ${data.data.nombre}`);
+
+        //Alert.alert("Bienvenido", `Hola ${data.data.nombre}`);
         router.replace("/Planes");
       } else {
         Alert.alert("Error", data?.message || "Credenciales incorrectas");
@@ -74,6 +76,13 @@ export default function LoginScreen() {
   return (
     <LinearGradient colors={["#f0f4ff", "#ffffff"]} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={[styles.card, styles.transparentCard]}>
+          <Image
+            source={require('@/assets/images/rg-logo.png')}
+            style={[styles.logo, styles.largeLogo]}
+            resizeMode="contain"
+          />
+        </View>
         <View style={styles.card}>
           <Text style={styles.title}>Iniciar Sesión</Text>
           <Text style={styles.subtitle}>Ingresa tus credenciales para acceder</Text>
@@ -111,7 +120,7 @@ export default function LoginScreen() {
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={() => handleLogin(email, password, setLoading)} 
+            onPress={() => handleLogin(email, password, setLoading)}
             disabled={loading}
           >
             {loading ? (

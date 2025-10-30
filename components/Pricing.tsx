@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -8,12 +8,13 @@ import {
     SafeAreaView,
     StyleSheet,
     Dimensions,
-    Alert
+    Alert,
+    Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import PlanCard from './PlanCard'; // Ajusta la ruta
+import PlanCard from './PlanCard';
 import requests from '@/app/services/requests';
-import { GET_ALL_PLANES } from '@/app/services/apiConstans';
+import { ACTIVAR_PLAN, GET_ALL_PLANES } from '@/app/services/apiConstans';
 
 // Interfaces
 interface PlanFeature { label: string; value: string; }
@@ -81,8 +82,11 @@ const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
     const [error, setError] = useState<string | null>(null);
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [mode, setMode] = useState<"personal" | "empresarial">("personal");
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const scrollViewRef = useRef<ScrollView>(null);
     const navigation = useNavigation();
     const { width: screenWidth } = Dimensions.get('window');
+    const cardWidth = screenWidth * 0.8 + 20;
 
     // Fetch planes
     useEffect(() => {
@@ -101,27 +105,56 @@ const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
         fetchPlans();
     }, []);
 
+    const handleScroll = (event: any) => {
+        const contentOffsetX = event.nativeEvent.contentOffset.x;
+        const index = Math.round(contentOffsetX / cardWidth);
+        setCurrentIndex(index);
+    };
+
+    const handleDotPress = (index: number) => {
+        setCurrentIndex(index);
+        scrollViewRef.current?.scrollTo({
+            x: index * cardWidth,
+            animated: true,
+        });
+    };
+
     const handleModeChange = (newMode: "personal" | "empresarial") => {
         setMode(newMode);
         setSelectedPlan(null);
+        setCurrentIndex(0);
     };
 
     const handleActivarPlan = async (planId: string) => {
         try {
-            const response = await ActivarPlan(planId);
-            if (!response.success) throw new Error(response.message || "Error al activar plan");
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-            setError(errorMessage);
-            Alert.alert("Error", errorMessage);
+            const response = await requests.post({
+                command: ACTIVAR_PLAN + planId
+            });
+
+            const { data } = response;
+
+            if (data?.success) {
+                Alert.alert("Éxito", data.message);
+                // Lógica de éxito
+                return data;
+            } else {
+                Alert.alert("Error", data?.message);
+                return null;
+            }
+        } catch (error: any) {
+            console.error("Error:", error);
+            Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
+            return null;
+        } finally {
+            setLoading(false);
         }
-    };
+    }
 
     const handleButtonClick = async (planId: string, planName: string) => {
         setSelectedPlan(planId);
         await handleActivarPlan(planId);
         if (planName.toLowerCase().includes("personal")) {
-            navigation.navigate('RecargaPersonal' as never);
+            //navigation.navigate('RecargaPersonal' as never);
         } else {
             //navigation.navigate('ResumenPago' as never, { planId } as never);
         }
@@ -147,11 +180,19 @@ const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
 
     return (
         <SafeAreaView style={styles.container}>
+
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Botón volver */}
                 <TouchableOpacity onPress={onBack} style={styles.backButton}>
                     <Text style={styles.backButtonText}>← Volver a Login</Text>
                 </TouchableOpacity>
+                <View style={[styles.card, styles.transparentCard]}>
+                    <Image
+                        source={require('@/assets/images/rg-logo.png')}
+                        style={[styles.logo, styles.largeLogo]}
+                        resizeMode="contain"
+                    />
+                </View>
 
                 {/* Header */}
                 <View style={styles.header}>
@@ -182,29 +223,50 @@ const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
                 </View>
 
                 {/* Scroll horizontal de planes */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.plansContainer}
-                    snapToInterval={screenWidth * 0.8 + 20}
-                    decelerationRate="fast"
-                >
-                    {filteredPlans.map(plan => {
-                        const isSelected = selectedPlan === plan.id.toString();
-                        return (
-                            <View key={plan.id} style={[styles.planWrapper, isSelected && styles.planWrapperSelected]}>
-                                <PlanCard
-                                    name={plan.nombre_plan}
-                                    description={getPlanDescription(plan)}
-                                    price={Number(plan.precio)}
-                                    features={getPlanFeatures(plan)}
-                                    featured={isSelected}
-                                    onSelect={() => handleButtonClick(plan.id.toString(), plan.nombre_plan)}
+                <View>
+                    <ScrollView
+                        ref={scrollViewRef}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.plansContainer}
+                        snapToInterval={cardWidth}
+                        decelerationRate="fast"
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
+                    >
+                        {filteredPlans.map(plan => {
+                            const isSelected = selectedPlan === plan.id.toString();
+                            return (
+                                <View key={plan.id} style={[styles.planWrapper, isSelected && styles.planWrapperSelected]}>
+                                    <PlanCard
+                                        name={plan.nombre_plan}
+                                        description={getPlanDescription(plan)}
+                                        price={Number(plan.precio)}
+                                        features={getPlanFeatures(plan)}
+                                        featured={isSelected}
+                                        onSelect={() => handleButtonClick(plan.id.toString(), plan.nombre_plan)}
+                                    />
+                                </View>
+                            );
+                        })}
+                    </ScrollView>
+
+                    {/* Indicadores de paginación */}
+                    {filteredPlans.length > 1 && (
+                        <View style={styles.dotsContainer}>
+                            {filteredPlans.map((_, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.dot,
+                                        currentIndex === index && styles.dotActive
+                                    ]}
+                                    onPress={() => handleDotPress(index)}
                                 />
-                            </View>
-                        );
-                    })}
-                </ScrollView>
+                            ))}
+                        </View>
+                    )}
+                </View>
 
                 {filteredPlans.length === 0 && (
                     <View style={styles.noPlansContainer}>
@@ -238,7 +300,11 @@ const styles = StyleSheet.create({
     retryButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     backButton: { alignSelf: 'flex-start', marginBottom: 16 },
     backButtonText: { color: '#6b7280', fontSize: 16 },
-    header: { alignItems: 'center', marginBottom: 32 },
+    header: {
+        alignItems: 'center',
+        marginBottom: 32,
+        marginTop: -40
+    },
     title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 12, color: '#1f2937' },
     subtitle: { fontSize: 16, textAlign: 'center', color: '#6b7280', marginBottom: 24, maxWidth: 300 },
     modeSwitch: { flexDirection: 'row', backgroundColor: '#f3f4f6', borderRadius: 25, padding: 4 },
@@ -249,11 +315,64 @@ const styles = StyleSheet.create({
     plansContainer: { paddingHorizontal: 10, paddingVertical: 20 },
     planWrapper: { width: Dimensions.get('window').width * 0.8, marginHorizontal: 10 },
     planWrapperSelected: { transform: [{ scale: 1.05 }] },
+    dotsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 15,
+        marginBottom: 10,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#ccc',
+        marginHorizontal: 4,
+    },
+    dotActive: {
+        backgroundColor: '#0A1E73',
+        width: 12,
+    },
     noPlansContainer: { alignItems: 'center', paddingVertical: 40 },
     noPlansText: { fontSize: 16, color: '#6b7280' },
     footer: { alignItems: 'center', marginTop: 32, paddingHorizontal: 20 },
     footerText: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 8 },
-    personalTip: { fontSize: 14, color: '#3b82f6', fontWeight: '500', textAlign: 'center', marginTop: 8 },
+    personalTip: {
+        fontSize: 14, color: '#3b82f6', fontWeight: '500', textAlign: 'center', marginTop: 8
+
+    },
+    //Estilo para el logo
+    transparentCard: {
+        backgroundColor: 'transparent',
+        shadowOpacity: 0,
+        elevation: 0,
+        borderWidth: 0,
+        marginLeft: 35,
+        marginTop: -35
+    },
+
+    logo: {
+        width: 200,
+        height: 100,
+        marginBottom: 30,
+    },
+
+    largeLogo: {
+        width: 300 * 0.8, // Más ancho
+        height: 150 * 0.8, // Más alto
+        marginBottom: 30,
+    },
+    card: {
+        width: "90%",
+        backgroundColor: "#fff",
+        borderRadius: 12,
+        padding: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
+    },
 });
 
 export default Pricing;

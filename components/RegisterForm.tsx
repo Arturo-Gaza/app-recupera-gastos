@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image
 } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react-native';
@@ -232,6 +233,7 @@ export function Register() {
 
   //Formulario General
   const renderRegisterForm = () => (
+    
     <ScrollView contentContainerStyle={styles.formContainer}>
       <Text style={styles.label}>
         Teléfono <Text style={styles.required}>*</Text>
@@ -248,7 +250,7 @@ export function Register() {
             {countryCodes.map((country) => (
               <Picker.Item
                 key={country.code}
-                label={`${country.flag} ${country.code}`} 
+                label={`${country.flag} ${country.code}`}
                 value={country.code}
               />
             ))}
@@ -293,7 +295,7 @@ export function Register() {
           onChangeText={setPassword}
           placeholder="Ingresa tu contraseña"
           placeholderTextColor="rgba(0, 0, 0, 0.3)"
-          secureTextEntry={!showPassword} 
+          secureTextEntry={!showPassword}
         />
         <TouchableOpacity
           style={styles.eyeIcon}
@@ -308,7 +310,7 @@ export function Register() {
       </View>
 
       {/* Validación de requisitos de contraseña */}
-      {password.length > 0 && (
+     {password.length > 0 && !passwordValidation.isValid && (
         <View style={styles.requirementsContainer}>
           <RequirementItem
             met={passwordValidation.hasMinLength}
@@ -343,7 +345,7 @@ export function Register() {
           onChangeText={setConfirmPassword}
           placeholder="Confirma tu contraseña"
           placeholderTextColor="rgba(0, 0, 0, 0.3)"
-          secureTextEntry={!showConfirmPassword} 
+          secureTextEntry={!showConfirmPassword}
         />
         <TouchableOpacity
           style={styles.eyeIcon}
@@ -500,6 +502,13 @@ export function Register() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <View style={[styles.card, styles.transparentCard]}>
+        <Image
+          source={require('@/assets/images/rg-logo.png')}
+          style={[styles.logo, styles.largeLogo]}
+          resizeMode="contain"
+        />
+      </View>
       <View style={styles.card}>
         <View style={styles.header}>
           {currentStep !== 'registrar' && currentStep !== 'success' && (

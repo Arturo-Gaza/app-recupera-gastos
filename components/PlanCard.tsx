@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 3.84,
         elevation: 5,
+        marginTop: -10
     },
     cardFeatured: {
         borderColor: '#3b82f6',
