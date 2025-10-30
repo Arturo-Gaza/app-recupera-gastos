@@ -30,7 +30,7 @@ export default function LoginScreen() {
       const response = await requests.post({
         command: LOGIN,
         data: { email, password },
-      });
+});
   
       const { data } = response;
   
@@ -59,7 +59,7 @@ export default function LoginScreen() {
         await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(dataSST));
         
         Alert.alert("Bienvenido", `Hola ${data.data.nombre}`);
-        router.replace("/(tabs)");
+        router.replace("/Planes");
       } else {
         Alert.alert("Error", data?.message || "Credenciales incorrectas");
       }

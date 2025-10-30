@@ -27,6 +27,11 @@ export default function RootLayout() {
           options={{ headerShown: false }} 
         />
 
+         <Stack.Screen 
+          name="Planes" 
+          options={{ headerShown: false }} 
+        />
+
         {/* Pantalla principal con tabs */}
         <Stack.Screen 
           name="(tabs)" 
