@@ -19,7 +19,7 @@ export default function PlanesScreen() {
     };
   
     const handleLater = () => {
-      //router.push("/Completar");
+     router.push('/login');
     };
 
 

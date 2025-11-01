@@ -63,13 +63,12 @@ export default function LoginScreen() {
         //Alert.alert("Bienvenido", `Hola ${data.data.nombre}`);
         if (!dataSST.tieneSuscripcionActivaSST) {
           router.replace("/Planes");
-        }
-        
-        if (!dataSST.DatosCompletosSST) {
+        } else if (!dataSST.DatosCompletosSST) {
           router.replace("/datosAlert");
-        }else{
-           router.replace("/fiscalesAlert");
+        } else if (!dataSST.tienDatoFiscalSST) {
+          router.replace("/fiscalesAlert");
         }
+
 
 
 

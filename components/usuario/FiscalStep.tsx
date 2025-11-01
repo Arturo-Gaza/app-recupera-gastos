@@ -94,30 +94,19 @@ export default function FiscalStep({
   const loadRegimens = async () => {
     try {
       setLoadingRegimens(true);
-      console.log('🔍 Cargando regímenes fiscales...');
       
       const response = await requests.get({ 
         command: CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN + false 
       });
       
-      console.log('📦 Respuesta completa de la API:', response);
       
       let regimensData: RegimenFiscal[] = [];
       
-      // DEBUG: Ver la estructura real
-      console.log('🔍 DEBUG - Estructura de response:', {
-        tieneData: !!response.data,
-        tipoData: typeof response.data,
-        esArray: Array.isArray(response.data),
-        keys: response.data ? Object.keys(response.data) : 'no data'
-      });
-
       // Si response.data es un string (JSON stringificado)
       if (response.data && typeof response.data === 'string') {
-        console.log('✅ response.data es string, parseando...');
+        
         try {
           const parsedData = JSON.parse(response.data);
-          console.log('📊 Datos parseados:', parsedData);
           
           if (parsedData.data && Array.isArray(parsedData.data)) {
             regimensData = parsedData.data;
@@ -125,33 +114,23 @@ export default function FiscalStep({
             regimensData = parsedData;
           }
         } catch (parseError) {
-          console.error('❌ Error parseando JSON:', parseError);
+          
         }
       }
       // Si response.data es directamente el array
       else if (response.data && Array.isArray(response.data)) {
-        console.log('✅ response.data es array directo');
+        
         regimensData = response.data;
       }
       // Si response.data es un objeto con propiedad data
       else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        console.log('✅ response.data.data es array');
+        
         regimensData = response.data.data;
-      }
-      
-      console.log(`📈 Se encontraron ${regimensData.length} regímenes`);
-      
-      if (regimensData.length > 0) {
-        console.log('📋 Primer régimen:', regimensData[0]);
-      } else {
-        console.log('⚠️ No se encontraron regímenes');
-        console.log('🔍 Response.data completo:', response.data);
       }
       
       setAvailableRegimens(regimensData);
       
     } catch (error) {
-      console.error('❌ Error loading regimens:', error);
       Alert.alert('Error', 'No se pudieron cargar los regímenes fiscales');
       setAvailableRegimens([]);
     } finally {
@@ -242,7 +221,6 @@ export default function FiscalStep({
       additionalData: fiscalData
     };
 
-    console.log('Datos a enviar:', submitData);
     onSubmit(submitData);
   };
 
