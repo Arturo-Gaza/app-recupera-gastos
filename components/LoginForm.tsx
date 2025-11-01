@@ -61,7 +61,18 @@ export default function LoginScreen() {
         await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(dataSST));
 
         //Alert.alert("Bienvenido", `Hola ${data.data.nombre}`);
-        router.replace("/Planes");
+        if (!dataSST.tieneSuscripcionActivaSST) {
+          router.replace("/Planes");
+        }
+        
+        if (!dataSST.DatosCompletosSST) {
+          router.replace("/datosAlert");
+        }else{
+           router.replace("/fiscalesAlert");
+        }
+
+
+
       } else {
         Alert.alert("Error", data?.message || "Credenciales incorrectas");
       }

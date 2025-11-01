@@ -75,7 +75,7 @@ export const styles = StyleSheet.create({
     elevation: 0,
     borderWidth: 0,
     marginTop: -55,
-    marginLeft: 85
+    marginLeft: 45
   },
 
   logo: {

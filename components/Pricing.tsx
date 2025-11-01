@@ -154,7 +154,7 @@ const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
         setSelectedPlan(planId);
         await handleActivarPlan(planId);
         if (planName.toLowerCase().includes("personal")) {
-            //navigation.navigate('RecargaPersonal' as never);
+            navigation.navigate('Recargas' as never);
         } else {
             //navigation.navigate('ResumenPago' as never, { planId } as never);
         }
@@ -291,7 +291,12 @@ const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
-    scrollContent: { flexGrow: 1, padding: 16 },
+    scrollContent: 
+    {
+         flexGrow: 1, 
+         padding: 16,
+        marginTop: 30
+         },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     loadingText: { marginTop: 16, fontSize: 16, color: '#6b7280' },
     errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },

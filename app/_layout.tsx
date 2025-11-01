@@ -28,6 +28,11 @@ export default function RootLayout() {
         />
 
          <Stack.Screen 
+          name="Completar" 
+          options={{ headerShown: false }} 
+        />
+
+         <Stack.Screen 
           name="Planes" 
           options={{ headerShown: false }} 
         />
