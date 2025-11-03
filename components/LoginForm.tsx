@@ -1,22 +1,21 @@
-import React, { useState } from "react";
+import { LOGIN } from "@/app/services/apiConstans";
+import requests from "@/app/services/requests";
+import { styles } from "@/app/styles/LoginStyles";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Image
+  View
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
-import requests from "@/app/services/requests";
-import { LOGIN } from "@/app/services/apiConstans";
-import { styles } from "@/app/styles/LoginStyles"
 
 
 export default function LoginScreen() {
@@ -63,12 +62,11 @@ export default function LoginScreen() {
         //Alert.alert("Bienvenido", `Hola ${data.data.nombre}`);
         if (!dataSST.tieneSuscripcionActivaSST) {
           router.replace("/Planes");
-        }
-        
-        if (!dataSST.DatosCompletosSST) {
+        } else if (!dataSST.DatosCompletosSST) {
           router.replace("/datosAlert");
-        }else{
-           router.replace("/fiscalesAlert");
+        } else {
+          File
+          router.replace("/fiscalesAlert");
         }
 
 
