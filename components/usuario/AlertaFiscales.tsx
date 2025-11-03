@@ -1,13 +1,12 @@
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    View,
+    Image,
+    StyleSheet,
     Text,
     TouchableOpacity,
-    Alert,
-    StyleSheet,
-    Image
+    View
 } from 'react-native';
-import { useRouter } from 'expo-router';
 
 
 interface AlertaFiscalesProps {
@@ -25,20 +24,22 @@ const AlertaFiscales: React.FC<AlertaFiscalesProps> = ({ onSubmit, onLater, load
     };
 
     const handleLater = () => {
-        Alert.alert(
-            "Información importante",
-            "Recuerda que tienes 5 días para completar tus datos personales y fiscales para evitar la desactivación de tu cuenta.",
-            [
-                {
-                    text: "Cancelar",
-                    style: "cancel"
-                },
-                {
-                    text: "Entendido",
-                    onPress: onLater,
-                }
-            ]
-        );
+        router.push("/login");
+
+        // Alert.alert(
+        //     "Información importante",
+        //     "Recuerda que tienes 5 días para completar tus datos personales y fiscales para evitar la desactivación de tu cuenta.",
+        //     [
+        //         {
+        //             text: "Cancelar",
+        //             style: "cancel"
+        //         },
+        //         {
+        //             text: "Entendido",
+        //             onPress: onLater,
+        //         }
+        //     ]
+        // );
     };
 
     return (

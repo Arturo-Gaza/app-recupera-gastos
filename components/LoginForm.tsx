@@ -65,7 +65,6 @@ export default function LoginScreen() {
         } else if (!dataSST.DatosCompletosSST) {
           router.replace("/datosAlert");
         } else {
-          File
           router.replace("/fiscalesAlert");
         }
 

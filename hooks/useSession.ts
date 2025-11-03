@@ -1,11 +1,32 @@
-import { useState, useEffect } from 'react';
+// useSession.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useState } from 'react';
+
+// Interface para la sesión basada en tu estructura
+interface UserSession {
+  SesionSST: boolean;
+  TokenSST: string;
+  IdUsuarioSST: number;
+  NombreSST: string;
+  ApellidoPSST: string;
+  ApellidoMSST: string;
+  CorreoSST: string;
+  RolSST: string;
+  IdRolSST: string;
+  TelefonoSST: string;
+  IdDepartamentoSST: string;
+  DepartamentoSST: string;
+  SaldoSST: string;
+  DatosCompletosSST: boolean;
+  tienDatoFiscalSST: boolean;
+  Password_temporalSST: boolean;
+  tieneSuscripcionActivaSST: boolean;
+}
 
 export const useSession = () => {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Cargar sesión al inicializar
   useEffect(() => {
     loadSession();
   }, []);
@@ -36,6 +57,6 @@ export const useSession = () => {
     session,
     loading,
     logout,
-    refreshSession: loadSession // Por si necesitas recargar los datos
+    refreshSession: loadSession
   };
 };

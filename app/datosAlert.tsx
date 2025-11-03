@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
-import { Stack, useRouter } from "expo-router";
 import InfoForm from "@/components/usuario/modalDatos";
+import { Stack, useRouter } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 export default function DatosAlertScreen() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function DatosAlertScreen() {
   };
 
   const handleLater = () => {
-    //router.push("/Completar");
+    router.push("/login");
   };
 
   return (

@@ -152,7 +152,7 @@ const renderSuccessStep = () => (
 
           <TouchableOpacity
             style={[styles.button, { flex: 1 }]}
-            onPress={() => console.log("¡Completar Datos Fiscales Ahora!")}
+            onPress={() => router.push('/metodoRegistroFiscal')}
             disabled={loading}
           >
             <Text style={{ color: "#FFF", fontWeight: "bold" }}>¡Completar Datos Fiscales Ahora!</Text>

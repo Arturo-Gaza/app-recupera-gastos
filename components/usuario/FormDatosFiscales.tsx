@@ -1,23 +1,25 @@
-import React, { useState } from 'react';
+import { CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN, DATOS_FISCALES_CREATE } from '@/app/services/apiConstans';
+import requests from '@/app/services/requests';
+import { useRouter } from 'expo-router';
+import { ArrowLeft, CheckCircle, ChevronDown, ChevronUp, FileText, Home, Receipt, User } from 'lucide-react-native';
+import { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  KeyboardTypeOptions,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  KeyboardTypeOptions,
-  Image
+  View,
 } from 'react-native';
 import { Checkbox } from 'react-native-paper';
-import { User, Home, ArrowLeft } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import requests from '@/app/services/requests';
-import { DATOS_FISCALES_CREATE } from '@/app/services/apiConstans';
+import { useSession } from '../../hooks/useSession';
 
-// Interfaces para los tipos de datos
+// ========== INTERFACES ==========
 interface DomicilioFiscal {
   calle?: string;
   num_exterior?: string;
@@ -27,6 +29,7 @@ interface DomicilioFiscal {
   localidad?: string;
   municipio?: string;
   estado?: string;
+  pais?: string;
 }
 
 interface ThirdPartyData {
@@ -38,24 +41,209 @@ interface ThirdPartyData {
   rfc: string;
   curp: string;
   email_facturacion_text: string;
+  fecha_inicio_op?: string;
+  fecha_emision?: string;
+  lugar_emision?: string;
+  id_estatus_sat?: number;
+  predeterminado?: boolean;
   domicilioFiscal?: DomicilioFiscal;
+  idCIF?: string;
 }
 
-// Props del componente
-interface FormDatosFiscalesProps {
-  loading?: boolean;
-  onSubmit?: () => void;
+interface UsoCFDI {
+  usoCFDI: string;
+  descripcion: string;
+  aplica_persona_fisica: boolean;
+  aplica_persona_moral: boolean;
+  fecha_inicio_vigencia: string;
+  fecha_fin_vigencia: string | null;
+  created_at: string;
+  updated_at: string;
+  pivot?: {
+    id_regimen: number;
+    usoCFDI: string;
+  };
+}
+
+interface RegimenFiscal {
+  id_regimen: number;
+  clave: string;
+  descripcion: string;
+  aplica_persona_fisica: boolean;
+  aplica_persona_moral: boolean;
+  fecha_inicio_vigencia: string;
+  fecha_fin_vigencia: string | null;
+  created_at: string;
+  updated_at: string;
+  usos_cfdi: UsoCFDI[];
+  usosCfdi?: UsoCFDI[];
+}
+
+interface SelectedRegimen {
+  id_regimen: number;
+  fecha_inicio_regimen: string;
+  predeterminado: boolean;
+  usosCfdi: SelectedUsoCFDI[];
+}
+
+interface SelectedUsoCFDI {
+  uso_cfdi: string;
+  predeterminado: boolean;
+}
+
+// ========== COMPONENTE DE ÉXITO ==========
+function SuccessStep({ 
+  onResetData,
+  onBack 
+}: { 
+  onResetData?: () => void;
   onBack?: () => void;
+}) {
+  const router = useRouter();
+
+  const handleResetData = () => {
+    if (onResetData) {
+      onResetData();
+    } else {
+      Alert.alert(
+        'Registrar otro receptor',
+        '¿Deseas registrar otro receptor?',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Sí, registrar',
+            onPress: () => {
+              //router.replace('/ruta-del-formulario');
+            }
+          }
+        ]
+      );
+    }
+  };
+
+  return (
+    <View style={successStyles.container}>
+      <View style={successStyles.content}>
+        <View style={successStyles.iconContainer}>
+          <CheckCircle size={64} color="#10B981" />
+        </View>
+
+        <Text style={successStyles.successTitle}>
+          Receptor registrado exitosamente
+        </Text>
+        <Text style={successStyles.successMessage}>
+          El receptor ha sido registrado correctamente en el sistema.
+        </Text>
+
+        <View style={successStyles.buttonsContainer}>
+          <TouchableOpacity
+            style={[successStyles.button, successStyles.outlineButton]}
+            //onPress={() => router.push('/dashboard')}
+          >
+            <Text style={successStyles.outlineButtonText}>Ir al Dashboard</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[successStyles.button, successStyles.outlineButton]}
+            // onPress={() => router.push({
+            //   pathname: '/dashboard',
+            //   params: { section: 'receptores' }
+            // })}
+          >
+            <Text style={successStyles.outlineButtonText}>Gestionar receptores</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[successStyles.button, successStyles.primaryButton]}
+            onPress={handleResetData}
+          >
+            <Text style={successStyles.primaryButtonText}>Registrar otro receptor</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
 }
 
-export default function FormDatosFiscalesPage({
-  loading = false,
-  onSubmit,
-  onBack,
-}: FormDatosFiscalesProps) {
+const successStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 20,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    marginBottom: 24,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  successMessage: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  buttonsContainer: {
+    width: '100%',
+    gap: 12,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  outlineButton: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: 'transparent',
+  },
+  outlineButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  primaryButton: {
+    backgroundColor: '#1A2A6C',
+    marginTop: 8,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  secondaryButton: {
+    backgroundColor: '#F3F4F6',
+    marginTop: 16,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+});
+
+// ========== COMPONENTE PRINCIPAL ==========
+export default function FormDatosFiscalesCompleto() {
   const router = useRouter();
-  
-  // Estados
+
+  // Estados para el formulario de datos fiscales
   const [thirdPartyData, setThirdPartyData] = useState<ThirdPartyData>({
     es_persona_moral: false,
     nombre_razon: '',
@@ -65,6 +253,11 @@ export default function FormDatosFiscalesPage({
     rfc: '',
     curp: '',
     email_facturacion_text: '',
+    fecha_inicio_op: '',
+    fecha_emision: '',
+    lugar_emision: '',
+    id_estatus_sat: 1,
+    predeterminado: true,
     domicilioFiscal: {
       calle: '',
       num_exterior: '',
@@ -73,13 +266,28 @@ export default function FormDatosFiscalesPage({
       colonia: '',
       localidad: '',
       municipio: '',
-      estado: ''
+      estado: '',
+      pais: 'México'
     }
   });
 
-  const [internalLoading, setInternalLoading] = useState(false);
+  // Estados para la sección de regímenes fiscales
+  const [availableRegimens, setAvailableRegimens] = useState<RegimenFiscal[]>([]);
+  const [selectedRegimens, setSelectedRegimens] = useState<SelectedRegimen[]>([]);
+  const [loadingRegimens, setLoadingRegimens] = useState(false);
+  const [expandedRegimen, setExpandedRegimen] = useState<number | null>(null);
 
-  // Definir los campos del domicilio con tipos correctos
+  // Estados de UI
+  const [currentStep, setCurrentStep] = useState<'datos' | 'regimenes' | 'exito'>('datos');
+  const [internalLoading, setInternalLoading] = useState(false);
+  const { session, loading: sessionLoading } = useSession();
+
+  // ========== FUNCIONES COMUNES ==========
+  const normalizeText = (text: string): string => {
+    return text.trim().toUpperCase();
+  };
+
+  // ========== FUNCIONES PARA DATOS FISCALES ==========
   const domicilioFields = [
     { key: 'calle' as const, label: 'Calle', maxLength: 200 },
     { key: 'num_exterior' as const, label: 'Número Exterior', maxLength: 49 },
@@ -91,7 +299,6 @@ export default function FormDatosFiscalesPage({
     { key: 'estado' as const, label: 'Estado', maxLength: 149 },
   ];
 
-  // Funciones de validación
   const validateApellido = (apellido: string): string | null => {
     if (apellido.length < 2) return "El apellido debe tener al menos 2 caracteres";
     return null;
@@ -122,10 +329,6 @@ export default function FormDatosFiscalesPage({
     return null;
   };
 
-  const normalizeText = (text: string): string => {
-    return text.trim().toUpperCase();
-  };
-
   const resetDataMoral = () => {
     setThirdPartyData(prev => ({
       ...prev,
@@ -136,6 +339,9 @@ export default function FormDatosFiscalesPage({
       rfc: '',
       curp: '',
       email_facturacion_text: '',
+      fecha_inicio_op: '',
+      fecha_emision: '',
+      lugar_emision: '',
       domicilioFiscal: {
         calle: '',
         num_exterior: '',
@@ -144,12 +350,14 @@ export default function FormDatosFiscalesPage({
         colonia: '',
         localidad: '',
         municipio: '',
-        estado: ''
+        estado: '',
+        pais: 'México'
       }
     }));
   };
 
-  // Handlers para los cambios de texto
+  const currentLoading = internalLoading || sessionLoading;
+
   const handleRFCChange = (text: string) => {
     const normalizedValue = normalizeText(text);
     setThirdPartyData(prev => ({
@@ -173,8 +381,7 @@ export default function FormDatosFiscalesPage({
     }));
   };
 
-  // Validación antes de enviar
-  const validateBeforeSubmit = (): boolean => {
+  const validateDatosFiscales = (): boolean => {
     const errors: string[] = [];
 
     if (!thirdPartyData.nombre_razon.trim()) {
@@ -207,115 +414,420 @@ export default function FormDatosFiscalesPage({
     return true;
   };
 
-  // Handlers de navegación y submit - SOLO CREAR
-  const handleSubmit = async () => {
-    if (onSubmit) {
-      // Si se pasó la prop onSubmit, la usamos
-      onSubmit();
-    } else {
-      // Lógica por defecto si no se pasa la prop
-      setInternalLoading(true);
-      
-      // Validaciones antes de enviar
-      if (!validateBeforeSubmit()) {
-        setInternalLoading(false);
-        return;
+  // ========== FUNCIONES PARA REGÍMENES FISCALES ==========
+  const loadRegimens = async () => {
+    try {
+      setLoadingRegimens(true);
+
+      const esPersonaMoral = thirdPartyData.es_persona_moral
+
+      const response = await requests.get({
+        command: CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN + esPersonaMoral
+      });
+
+      let regimensData: RegimenFiscal[] = [];
+
+      if (response.data && typeof response.data === 'string') {
+        try {
+          const parsedData = JSON.parse(response.data);
+          if (parsedData.data && Array.isArray(parsedData.data)) {
+            regimensData = parsedData.data;
+          } else if (Array.isArray(parsedData)) {
+            regimensData = parsedData;
+          }
+        } catch (parseError) {
+          console.error('Error parseando JSON:', parseError);
+        }
+      }
+      else if (response.data && Array.isArray(response.data)) {
+        regimensData = response.data;
+      }
+      else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        regimensData = response.data.data;
       }
 
-      try {
-        console.log('📝 Datos a enviar:', thirdPartyData);
-        
-        // Preparar los datos para la API
-        const formData = {
-          es_persona_moral: thirdPartyData.es_persona_moral,
-          nombre_razon: thirdPartyData.nombre_razon,
-          primer_apellido: thirdPartyData.primer_apellido || '',
-          segundo_apellido: thirdPartyData.segundo_apellido || '',
-          nombre_comercial: thirdPartyData.nombre_comercial || '',
-          rfc: thirdPartyData.rfc,
-          curp: thirdPartyData.curp || '',
-          email_facturacion_text: thirdPartyData.email_facturacion_text,
-          
-          // Domicilio fiscal
-          domicilio_fiscal: {
-            calle: thirdPartyData.domicilioFiscal?.calle || '',
-            num_exterior: thirdPartyData.domicilioFiscal?.num_exterior || '',
-            num_interior: thirdPartyData.domicilioFiscal?.num_interior || '',
-            codigo_postal: thirdPartyData.domicilioFiscal?.codigo_postal || '',
-            colonia: thirdPartyData.domicilioFiscal?.colonia || '',
-            localidad: thirdPartyData.domicilioFiscal?.localidad || '',
-            municipio: thirdPartyData.domicilioFiscal?.municipio || '',
-            estado: thirdPartyData.domicilioFiscal?.estado || '',
-          },
-          
-          // Metadata adicional
-          fecha_registro: new Date().toISOString(),
-          metodo_registro: 'manual'
-        };
+      setAvailableRegimens(regimensData);
 
-        console.log('🚀 Enviando a API:', formData);
+    } catch (error) {
+      console.error('Error loading regimens:', error);
+      Alert.alert('Error', 'No se pudieron cargar los regímenes fiscales');
+      setAvailableRegimens([]);
+    } finally {
+      setLoadingRegimens(false);
+    }
+  };
 
-        // Llamada a la API - SOLO CREAR
-        const terceroResponse = await requests.post({
-          command: DATOS_FISCALES_CREATE,
-          data: formData,
-        });
-
-        const { data } = terceroResponse;
-        console.log('✅ Respuesta de la API:', data);
-
-        if (data.success) {
-          Alert.alert(
-            'Éxito', 
-            'Datos fiscales guardados correctamente',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  // Navegar a la pantalla de método de registro fiscal
-                  router.push('/metodoRegistroFiscal');
-                }
-              }
-            ]
-          );
-        } else {
-          throw new Error(data.message || data.error || 'Error en la respuesta del servidor');
-        }
-        
-      } catch (error: any) {
-        console.error('❌ Error al enviar datos:', error);
-        
-        let errorMessage = 'Ocurrió un error al guardar los datos';
-        
-        if (error.response) {
-          // Error de la API
-          errorMessage = error.response.data?.message || `Error ${error.response.status}: ${error.response.statusText}`;
-        } else if (error.request) {
-          // Error de red
-          errorMessage = 'Error de conexión. Verifica tu internet.';
-        } else if (error.message) {
-          // Error del cliente
-          errorMessage = error.message;
-        }
-        
-        Alert.alert('Error', errorMessage);
-      } finally {
-        setInternalLoading(false);
+  const handleRegimenToggle = (regimen: RegimenFiscal, checked: boolean) => {
+    if (checked) {
+      const newSelectedRegimen: SelectedRegimen = {
+        id_regimen: regimen.id_regimen,
+        fecha_inicio_regimen: new Date().toISOString().split('T')[0],
+        predeterminado: selectedRegimens.length === 0,
+        usosCfdi: []
+      };
+      setSelectedRegimens(prev => [...prev, newSelectedRegimen]);
+    } else {
+      setSelectedRegimens(prev => prev.filter(r => r.id_regimen !== regimen.id_regimen));
+      if (expandedRegimen === regimen.id_regimen) {
+        setExpandedRegimen(null);
       }
     }
   };
 
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      router.back();
+  const handleFechaInicioRegimenChange = (idRegimen: number, fecha: string) => {
+    setSelectedRegimens(prev =>
+      prev.map(regimen =>
+        regimen.id_regimen === idRegimen
+          ? { ...regimen, fecha_inicio_regimen: fecha }
+          : regimen
+      )
+    );
+  };
+
+  const handlePredeterminadoToggle = (idRegimen: number, checked: boolean) => {
+    setSelectedRegimens(prev =>
+      prev.map(regimen => ({
+        ...regimen,
+        predeterminado: regimen.id_regimen === idRegimen ? checked : false
+      }))
+    );
+  };
+
+  const handleUsoCFDIToggle = (idRegimen: number, usoCFDI: string, checked: boolean) => {
+    setSelectedRegimens(prev =>
+      prev.map(regimen => {
+        if (regimen.id_regimen === idRegimen) {
+          const usosCfdi = checked
+            ? [...(regimen.usosCfdi || []), { uso_cfdi: usoCFDI, predeterminado: false }]
+            : (regimen.usosCfdi || []).filter(u => u.uso_cfdi !== usoCFDI);
+
+          return { ...regimen, usosCfdi };
+        }
+        return regimen;
+      })
+    );
+  };
+
+  const handleUsoCFDIPredeterminadoToggle = (idRegimen: number, usoCFDI: string, checked: boolean) => {
+    setSelectedRegimens(prev =>
+      prev.map(regimen => {
+        if (regimen.id_regimen === idRegimen) {
+          const usosCfdi = (regimen.usosCfdi || []).map(uso => ({
+            ...uso,
+            predeterminado: uso.uso_cfdi === usoCFDI ? checked : false
+          }));
+          return { ...regimen, usosCfdi };
+        }
+        return regimen;
+      })
+    );
+  };
+
+  const toggleRegimenExpansion = (idRegimen: number) => {
+    setExpandedRegimen(prev => prev === idRegimen ? null : idRegimen);
+  };
+
+  const validateRegimenesFiscales = (): boolean => {
+    if (selectedRegimens.length === 0) {
+      Alert.alert('Error', 'Debe seleccionar al menos un régimen fiscal');
+      return false;
+    }
+    return true;
+  };
+
+  // ========== FUNCIÓN PARA CONSTRUIR Y ENVIAR JSON COMPLETO ==========
+  const buildCompleteJSON = () => {
+    if (!session || !session.IdUsuarioSST) {
+      throw new Error('No hay sesión activa o el usuario no tiene ID');
+    }
+    const completeData = {
+      id: null,
+      id_usuario: session.IdUsuarioSST,
+      rfc: thirdPartyData.rfc,
+      curp: thirdPartyData.curp,
+      idCIF: thirdPartyData.idCIF || '',
+      es_persona_moral: thirdPartyData.es_persona_moral,
+      nombre_razon: thirdPartyData.nombre_razon,
+      primer_apellido: thirdPartyData.primer_apellido,
+      segundo_apellido: thirdPartyData.segundo_apellido,
+      nombre_comercial: thirdPartyData.nombre_comercial,
+      email_facturacion_text: thirdPartyData.email_facturacion_text,
+
+      // Domicilio fiscal
+      domicilioFiscal: {
+        calle: thirdPartyData.domicilioFiscal?.calle || '',
+        num_exterior: thirdPartyData.domicilioFiscal?.num_exterior || '',
+        num_interior: thirdPartyData.domicilioFiscal?.num_interior || null,
+        codigo_postal: thirdPartyData.domicilioFiscal?.codigo_postal || '',
+        colonia: thirdPartyData.domicilioFiscal?.colonia || '',
+        localidad: thirdPartyData.domicilioFiscal?.localidad || '',
+        municipio: thirdPartyData.domicilioFiscal?.municipio || '',
+        estado: thirdPartyData.domicilioFiscal?.estado || '',
+        pais: thirdPartyData.domicilioFiscal?.pais || 'México'
+      },
+
+      // Datos adicionales
+      fecha_inicio_op: thirdPartyData.fecha_inicio_op || '',
+      fecha_emision: thirdPartyData.fecha_emision || '',
+      lugar_emision: thirdPartyData.lugar_emision || '',
+      id_estatus_sat: thirdPartyData.id_estatus_sat || 1,
+      predeterminado: thirdPartyData.predeterminado || true,
+      fecha_ultimo_cambio: new Date().toISOString().split('T')[0],
+
+      // Campos opcionales
+      email: null,
+      email_facturacion_id: null,
+      telefono: null,
+      datos_extra: null,
+      fecha_ult_cambio_op: null,
+      habilitado: true,
+
+      // Regímenes fiscales seleccionados
+      regimenesFiscales: selectedRegimens.map(regimen => ({
+        id_regimen: regimen.id_regimen,
+        predeterminado: regimen.predeterminado,
+        fecha_inicio_regimen: regimen.fecha_inicio_regimen,
+        usosCfdi: regimen.usosCfdi || []
+      }))
+    };
+
+    return completeData;
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!validateRegimenesFiscales()) return;
+
+    setInternalLoading(true);
+
+    try {
+      const completeData = buildCompleteJSON();
+
+      const response = await requests.post({
+        command: DATOS_FISCALES_CREATE,
+        data: completeData,
+      });
+
+      const { data } = response;
+
+      if (data.success) {
+        // Cambiar al step de éxito en lugar del Alert
+        setCurrentStep('exito');
+      } else {
+        throw new Error(data.message || 'Error en la respuesta del servidor');
+      }
+
+    } catch (error: any) {
+      console.error('Error al enviar datos:', error);
+      Alert.alert('Error', 'No se pudo completar el registro fiscal');
+    } finally {
+      setInternalLoading(false);
     }
   };
 
-  // Usa la prop loading o el estado interno
-  const currentLoading = loading || internalLoading;
+  // ========== NAVEGACIÓN ENTRE STEPS ==========
+  const handleNextStep = () => {
+    if (!validateDatosFiscales()) return;
 
+    // Cargar regímenes cuando pasamos al siguiente step
+    loadRegimens();
+    setCurrentStep('regimenes');
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep('datos');
+  };
+
+  // ========== FUNCIÓN PARA RESETEAR FORMULARIO ==========
+  const resetFormData = () => {
+    setThirdPartyData({
+      es_persona_moral: false,
+      nombre_razon: '',
+      primer_apellido: '',
+      segundo_apellido: '',
+      nombre_comercial: '',
+      rfc: '',
+      curp: '',
+      email_facturacion_text: '',
+      fecha_inicio_op: '',
+      fecha_emision: '',
+      lugar_emision: '',
+      id_estatus_sat: 1,
+      predeterminado: true,
+      domicilioFiscal: {
+        calle: '',
+        num_exterior: '',
+        num_interior: '',
+        codigo_postal: '',
+        colonia: '',
+        localidad: '',
+        municipio: '',
+        estado: '',
+        pais: 'México'
+      }
+    });
+    setSelectedRegimens([]);
+    setCurrentStep('datos');
+  };
+
+  // ========== RENDERIZADO DE REGÍMENES ==========
+  const renderRegimenItem = ({ item: regimen }: { item: RegimenFiscal }) => {
+    const selectedRegimen = selectedRegimens.find(r => r.id_regimen === regimen.id_regimen);
+    const isSelected = !!selectedRegimen;
+    const isExpanded = expandedRegimen === regimen.id_regimen;
+
+    return (
+      <View style={styles.regimenItem}>
+        <View style={styles.regimenRow}>
+          <View style={styles.centerCell}>
+            <Checkbox.Android
+              status={isSelected ? 'checked' : 'unchecked'}
+              onPress={() => handleRegimenToggle(regimen, !isSelected)}
+              color="#1A2A6C"
+            />
+          </View>
+
+          <Text style={[styles.regimenCell, styles.centerCell, styles.codeCell]}>
+            {regimen.clave}
+          </Text>
+
+          <Text style={[styles.regimenCell, styles.descriptionCell]}>
+            {regimen.descripcion}
+          </Text>
+
+          <View style={styles.centerCell}>
+            {isSelected && (
+              <TextInput
+                style={styles.dateInput}
+                value={selectedRegimen?.fecha_inicio_regimen}
+                onChangeText={(text) => handleFechaInicioRegimenChange(regimen.id_regimen, text)}
+                placeholder="YYYY-MM-DD"
+              />
+            )}
+          </View>
+
+          <View style={styles.centerCell}>
+            {isSelected && (
+              <Checkbox.Android
+                status={selectedRegimen?.predeterminado ? 'checked' : 'unchecked'}
+                onPress={() => handlePredeterminadoToggle(regimen.id_regimen, !selectedRegimen?.predeterminado)}
+                color="#1A2A6C"
+              />
+            )}
+          </View>
+        </View>
+
+        {isSelected && (
+          <View style={styles.usosSection}>
+            <TouchableOpacity
+              style={styles.usosHeader}
+              onPress={() => toggleRegimenExpansion(regimen.id_regimen)}
+            >
+              <Receipt size={16} color="#1A2A6C" />
+              <Text style={styles.usosHeaderText}>
+                Usos de CFDI ({selectedRegimen?.usosCfdi?.length || 0} seleccionados)
+              </Text>
+              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </TouchableOpacity>
+
+            {isExpanded && (
+              <View style={styles.usosContent}>
+                <View style={styles.usosTableHeader}>
+                  <Text style={[styles.usosHeaderCell, styles.centerCell]}>SEL.</Text>
+                  <Text style={[styles.usosHeaderCell, styles.centerCell]}>CÓDIGO</Text>
+                  <Text style={styles.usosHeaderCell}>DESCRIPCIÓN</Text>
+                  <Text style={[styles.usosHeaderCell, styles.centerCell]}>PRED.</Text>
+                </View>
+
+                {regimen.usos_cfdi && regimen.usos_cfdi.map((uso) => {
+                  const selectedUso = selectedRegimen?.usosCfdi?.find(u => u.uso_cfdi === uso.usoCFDI);
+                  const isUsoSelected = !!selectedUso;
+
+                  return (
+                    <View key={uso.usoCFDI} style={styles.usoRow}>
+                      <View style={styles.centerCell}>
+                        <Checkbox.Android
+                          status={isUsoSelected ? 'checked' : 'unchecked'}
+                          onPress={() => handleUsoCFDIToggle(regimen.id_regimen, uso.usoCFDI, !isUsoSelected)}
+                          color="#1A2A6C"
+                        />
+                      </View>
+
+                      <Text style={[styles.usoCell, styles.centerCell, styles.codeCell]}>
+                        {uso.usoCFDI}
+                      </Text>
+
+                      <Text style={[styles.usoCell, styles.descriptionCell]}>
+                        {uso.descripcion}
+                      </Text>
+
+                      <View style={styles.centerCell}>
+                        {isUsoSelected && (
+                          <Checkbox.Android
+                            status={selectedUso?.predeterminado ? 'checked' : 'unchecked'}
+                            onPress={() => handleUsoCFDIPredeterminadoToggle(regimen.id_regimen, uso.usoCFDI, !selectedUso?.predeterminado)}
+                            color="#1A2A6C"
+                          />
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderRegimenList = () => {
+    if (loadingRegimens) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#1A2A6C" />
+          <Text style={styles.loadingText}>Cargando regímenes...</Text>
+        </View>
+      );
+    }
+
+    if (!availableRegimens || availableRegimens.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No se encontraron regímenes fiscales</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={loadRegimens}
+          >
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.tableContainer}>
+        <View style={styles.tableHeader}>
+          <Text style={[styles.tableHeaderCell, styles.centerCell]}>SEL.</Text>
+          <Text style={[styles.tableHeaderCell, styles.centerCell]}>CÓD.</Text>
+          <Text style={styles.tableHeaderCell}>RÉGIMEN FISCAL</Text>
+          <Text style={[styles.tableHeaderCell, styles.centerCell]}>FECHA INICIO</Text>
+          <Text style={[styles.tableHeaderCell, styles.centerCell]}>PRED.</Text>
+        </View>
+
+        <FlatList
+          data={availableRegimens}
+          renderItem={renderRegimenItem}
+          keyExtractor={(item) => item.id_regimen.toString()}
+          style={styles.flatList}
+          contentContainerStyle={styles.flatListContent}
+          showsVerticalScrollIndicator={true}
+          nestedScrollEnabled={true}
+        />
+      </View>
+    );
+  };
+
+  // ========== RENDER PRINCIPAL ==========
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
@@ -327,308 +839,412 @@ export default function FormDatosFiscalesPage({
             resizeMode="contain"
           />
         </View>
-        
+
         <Text style={styles.headerTitle}>
-          Datos Fiscales del Tercero
+          {currentStep === 'datos' ? 'Datos Fiscales del Tercero' : 
+           currentStep === 'regimenes' ? 'Regímenes Fiscales' : 
+           'Registro Exitoso'}
         </Text>
-        
-        {/* Checkbox para persona moral/física */}
-        <View style={styles.card}>
-          <View style={styles.checkboxContainer}>
-            <Checkbox.Android
-              status={thirdPartyData.es_persona_moral ? 'checked' : 'unchecked'}
-              disabled={currentLoading}
-              onPress={() => {
-                resetDataMoral();
-                setThirdPartyData(prev => ({
-                  ...prev,
-                  es_persona_moral: !prev.es_persona_moral,
-                }));
-              }}
-              color="#3b82f6"
-            />
-            <Text style={styles.checkboxLabel}>Es persona moral</Text>
-          </View>
 
-          {/* Datos de la persona fiscal */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <User size={20} color="#3b82f6" />
-              <Text style={styles.sectionTitle}>
-                Datos de la Persona {thirdPartyData.es_persona_moral ? 'Moral' : 'Física'}
-              </Text>
-            </View>
-
-            <View style={styles.formGrid}>
-              {/* Nombre/Razón Social */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>
-                  {thirdPartyData.es_persona_moral ? 'Razón Social *' : 'Nombre(s) *'}
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  value={thirdPartyData.nombre_razon}
-                  placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                  onChangeText={(text) => setThirdPartyData(prev => ({ 
-                    ...prev, 
-                    nombre_razon: normalizeText(text) 
-                  }))}
-                  maxLength={100}
-                  placeholder={thirdPartyData.es_persona_moral ? 'Razón Social' : 'Nombre(s)'}
-                  editable={!currentLoading}
-                />
-              </View>
-
-              {/* Campos para persona física */}
-              {!thirdPartyData.es_persona_moral && (
-                <>
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Primer Apellido *</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={thirdPartyData.primer_apellido}
-                      placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                      onChangeText={(text) => setThirdPartyData(prev => ({
-                        ...prev,
-                        primer_apellido: normalizeText(text)
-                      }))}
-                      maxLength={99}
-                      placeholder="Primer Apellido"
-                      editable={!currentLoading}
-                    />
-                    {thirdPartyData.primer_apellido && validateApellido(thirdPartyData.primer_apellido) && (
-                      <Text style={styles.errorText}>
-                        {validateApellido(thirdPartyData.primer_apellido)}
-                      </Text>
-                    )}
-                  </View>
-
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Segundo Apellido *</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={thirdPartyData.segundo_apellido}
-                      placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                      onChangeText={(text) => setThirdPartyData(prev => ({
-                        ...prev,
-                        segundo_apellido: normalizeText(text)
-                      }))}
-                      maxLength={99}
-                      placeholder="Segundo Apellido"
-                      editable={!currentLoading}
-                    />
-                    {thirdPartyData.segundo_apellido && validateApellido(thirdPartyData.segundo_apellido) && (
-                      <Text style={styles.errorText}>
-                        {validateApellido(thirdPartyData.segundo_apellido)}
-                      </Text>
-                    )}
-                  </View>
-                </>
-              )}
-
-              {/* Nombre Comercial para persona moral */}
-              {thirdPartyData.es_persona_moral && (
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Nombre Comercial</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={thirdPartyData.nombre_comercial}
-                    placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                    onChangeText={(text) => setThirdPartyData(prev => ({ 
-                      ...prev, 
-                      nombre_comercial: normalizeText(text) 
-                    }))}
-                    maxLength={200}
-                    placeholder="Nombre Comercial"
-                    editable={!currentLoading}
-                  />
-                </View>
-              )}
-
-              {/* RFC */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>RFC *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={thirdPartyData.rfc}
-                  onChangeText={handleRFCChange}
-                  placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                  placeholder="XXXX000000XXX"
-                  maxLength={thirdPartyData.es_persona_moral === true ? 12 : 13}
-                  editable={!currentLoading}
-                  autoCapitalize="characters"
-                />
-                {thirdPartyData.rfc && !validateRFC(thirdPartyData.rfc, thirdPartyData.es_persona_moral) && (
-                  <Text style={styles.errorText}>
-                    {thirdPartyData.es_persona_moral
-                      ? "Formato inválido: 3 letras + fecha real (AAMMDD) + 3 caracteres"
-                      : "Formato inválido: 4 letras + fecha real (AAMMDD) + 3 caracteres"}
-                  </Text>
-                )}
-              </View>
-
-              {/* CURP para persona física */}
-              {!thirdPartyData.es_persona_moral && (
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>CURP</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={thirdPartyData.curp}
-                    placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                    onChangeText={(text) => setThirdPartyData(prev => ({
+        {/* STEP 1: DATOS FISCALES */}
+        {currentStep === 'datos' && (
+          <>
+            {/* Checkbox para persona moral/física */}
+            <View style={styles.card}>
+              <View style={styles.checkboxContainer}>
+                <Checkbox.Android
+                  status={thirdPartyData.es_persona_moral ? 'checked' : 'unchecked'}
+                  disabled={currentLoading}
+                  onPress={() => {
+                    resetDataMoral();
+                    setThirdPartyData(prev => ({
                       ...prev,
-                      curp: normalizeText(text)
-                    }))}
-                    placeholder="XXXX000000XXXXXXXX (opcional)"
-                    maxLength={18}
-                    editable={!currentLoading}
-                    autoCapitalize="characters"
-                  />
-                  {thirdPartyData.curp && !validateCURPWithRFC(thirdPartyData.curp, thirdPartyData.rfc).isValid && (
-                    <Text style={styles.errorText}>
-                      {validateCURPWithRFC(thirdPartyData.curp, thirdPartyData.rfc).message}
-                    </Text>
-                  )}
-                </View>
-              )}
-
-              {/* Email */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Correo *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                  value={thirdPartyData.email_facturacion_text}
-                  onChangeText={(text) => setThirdPartyData(prev => ({
-                    ...prev,
-                    email_facturacion_text: text
-                  }))}
-                  placeholder="correo@ejemplo.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  editable={!currentLoading}
+                      es_persona_moral: !prev.es_persona_moral,
+                    }));
+                  }}
+                  color="#3b82f6"
                 />
-                {thirdPartyData.email_facturacion_text && !validateEmail(thirdPartyData.email_facturacion_text) && (
-                  <Text style={styles.errorText}>Formato de correo inválido</Text>
-                )}
+                <Text style={styles.checkboxLabel}>Es persona moral</Text>
+              </View>
+
+              {/* Datos de la persona fiscal */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <User size={20} color="#3b82f6" />
+                  <Text style={styles.sectionTitle}>
+                    Datos de la Persona {thirdPartyData.es_persona_moral ? 'Moral' : 'Física'}
+                  </Text>
+                </View>
+
+                <View style={styles.formGrid}>
+                  {/* Nombre/Razón Social */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>
+                      {thirdPartyData.es_persona_moral ? 'Razón Social *' : 'Nombre(s) *'}
+                    </Text>
+                    <TextInput
+                      style={styles.input}
+                      value={thirdPartyData.nombre_razon}
+                      placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                      onChangeText={(text) => setThirdPartyData(prev => ({
+                        ...prev,
+                        nombre_razon: normalizeText(text)
+                      }))}
+                      maxLength={100}
+                      placeholder={thirdPartyData.es_persona_moral ? 'Razón Social' : 'Nombre(s)'}
+                      editable={!currentLoading}
+                    />
+                  </View>
+
+                  {/* Campos para persona física */}
+                  {!thirdPartyData.es_persona_moral && (
+                    <>
+                      <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Primer Apellido *</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={thirdPartyData.primer_apellido}
+                          placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                          onChangeText={(text) => setThirdPartyData(prev => ({
+                            ...prev,
+                            primer_apellido: normalizeText(text)
+                          }))}
+                          maxLength={99}
+                          placeholder="Primer Apellido"
+                          editable={!currentLoading}
+                        />
+                        {thirdPartyData.primer_apellido && validateApellido(thirdPartyData.primer_apellido) && (
+                          <Text style={styles.errorText}>
+                            {validateApellido(thirdPartyData.primer_apellido)}
+                          </Text>
+                        )}
+                      </View>
+
+                      <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Segundo Apellido *</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={thirdPartyData.segundo_apellido}
+                          placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                          onChangeText={(text) => setThirdPartyData(prev => ({
+                            ...prev,
+                            segundo_apellido: normalizeText(text)
+                          }))}
+                          maxLength={99}
+                          placeholder="Segundo Apellido"
+                          editable={!currentLoading}
+                        />
+                        {thirdPartyData.segundo_apellido && validateApellido(thirdPartyData.segundo_apellido) && (
+                          <Text style={styles.errorText}>
+                            {validateApellido(thirdPartyData.segundo_apellido)}
+                          </Text>
+                        )}
+                      </View>
+                    </>
+                  )}
+
+                  {/* Nombre Comercial para persona moral */}
+                  {thirdPartyData.es_persona_moral && (
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>Nombre Comercial</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={thirdPartyData.nombre_comercial}
+                        placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                        onChangeText={(text) => setThirdPartyData(prev => ({
+                          ...prev,
+                          nombre_comercial: normalizeText(text)
+                        }))}
+                        maxLength={200}
+                        placeholder="Nombre Comercial"
+                        editable={!currentLoading}
+                      />
+                    </View>
+                  )}
+
+                  {/* RFC */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>RFC *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={thirdPartyData.rfc}
+                      onChangeText={handleRFCChange}
+                      placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                      placeholder="XXXX000000XXX"
+                      maxLength={thirdPartyData.es_persona_moral === true ? 12 : 13}
+                      editable={!currentLoading}
+                      autoCapitalize="characters"
+                    />
+                    {thirdPartyData.rfc && !validateRFC(thirdPartyData.rfc, thirdPartyData.es_persona_moral) && (
+                      <Text style={styles.errorText}>
+                        {thirdPartyData.es_persona_moral
+                          ? "Formato inválido: 3 letras + fecha real (AAMMDD) + 3 caracteres"
+                          : "Formato inválido: 4 letras + fecha real (AAMMDD) + 3 caracteres"}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* CURP para persona física */}
+                  {!thirdPartyData.es_persona_moral && (
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>CURP</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={thirdPartyData.curp}
+                        placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                        onChangeText={(text) => setThirdPartyData(prev => ({
+                          ...prev,
+                          curp: normalizeText(text)
+                        }))}
+                        placeholder="XXXX000000XXXXXXXX (opcional)"
+                        maxLength={18}
+                        editable={!currentLoading}
+                        autoCapitalize="characters"
+                      />
+                      {thirdPartyData.curp && !validateCURPWithRFC(thirdPartyData.curp, thirdPartyData.rfc).isValid && (
+                        <Text style={styles.errorText}>
+                          {validateCURPWithRFC(thirdPartyData.curp, thirdPartyData.rfc).message}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Email */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Correo *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                      value={thirdPartyData.email_facturacion_text}
+                      onChangeText={(text) => setThirdPartyData(prev => ({
+                        ...prev,
+                        email_facturacion_text: text
+                      }))}
+                      placeholder="correo@ejemplo.com"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      editable={!currentLoading}
+                    />
+                    {thirdPartyData.email_facturacion_text && !validateEmail(thirdPartyData.email_facturacion_text) && (
+                      <Text style={styles.errorText}>Formato de correo inválido</Text>
+                    )}
+                  </View>
+                </View>
               </View>
             </View>
-          </View>
-        </View>
-        
-        <View style={styles.card}>
-          {/* Domicilio Fiscal */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Home size={20} color="#3b82f6" />
-              <Text style={styles.sectionTitle}>Domicilio Fiscal</Text>
-            </View>
 
-            <View style={styles.formGrid}>
-              {domicilioFields.map(({ key, label, maxLength, keyboardType }) => (
-                <View key={key} style={styles.inputContainer}>
-                  <Text style={styles.label}>{label}</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={thirdPartyData.domicilioFiscal?.[key] || ''}
-                    onChangeText={(text) => {
-                      if (key === 'codigo_postal') {
-                        const numericValue = text.replace(/\D/g, '').substring(0, 5);
-                        updateDomicilioFiscal(key, numericValue);
-                      } else {
-                        updateDomicilioFiscal(key, normalizeText(text));
-                      }
-                    }}
-                    maxLength={maxLength}
-                    placeholder={label}
-                    keyboardType={keyboardType}
-                    editable={!currentLoading}
-                  />
-                  {key === 'calle' && thirdPartyData.domicilioFiscal?.calle && validateAddress(thirdPartyData.domicilioFiscal.calle) && (
-                    <Text style={styles.errorText}>
-                      {validateAddress(thirdPartyData.domicilioFiscal.calle)}
-                    </Text>
-                  )}
-                  {key === 'num_exterior' && thirdPartyData.domicilioFiscal?.num_exterior && validateAddress(thirdPartyData.domicilioFiscal.num_exterior) && (
-                    <Text style={styles.errorText}>
-                      {validateAddress(thirdPartyData.domicilioFiscal.num_exterior)}
-                    </Text>
-                  )}
-                  {key === 'codigo_postal' && thirdPartyData.domicilioFiscal?.codigo_postal && validatePostalCode(thirdPartyData.domicilioFiscal.codigo_postal) && (
-                    <Text style={styles.errorText}>
-                      {validatePostalCode(thirdPartyData.domicilioFiscal.codigo_postal)}
-                    </Text>
-                  )}
+            <View style={styles.card}>
+              {/* Domicilio Fiscal */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Home size={20} color="#3b82f6" />
+                  <Text style={styles.sectionTitle}>Domicilio Fiscal</Text>
                 </View>
-              ))}
-            </View>
-          </View>
 
-          {/* Botones */}
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.outlineButton]}
-              onPress={handleBack}
-              disabled={currentLoading}
-            >
-              <Text style={styles.outlineButtonText}>
-                Regresar
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.button, styles.primaryButton, currentLoading && styles.disabledButton]}
-              onPress={handleSubmit}
-              disabled={currentLoading}
-            >
-              {currentLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.primaryButtonText}>
-                  Continuar
+                <View style={styles.formGrid}>
+                  {domicilioFields.map(({ key, label, maxLength, keyboardType }) => (
+                    <View key={key} style={styles.inputContainer}>
+                      <Text style={styles.label}>{label}</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={thirdPartyData.domicilioFiscal?.[key] || ''}
+                        onChangeText={(text) => {
+                          if (key === 'codigo_postal') {
+                            const numericValue = text.replace(/\D/g, '').substring(0, 5);
+                            updateDomicilioFiscal(key, numericValue);
+                          } else {
+                            updateDomicilioFiscal(key, normalizeText(text));
+                          }
+                        }}
+                        maxLength={maxLength}
+                        placeholder={label}
+                        placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                        keyboardType={keyboardType}
+                        editable={!currentLoading}
+                      />
+                      {key === 'calle' && thirdPartyData.domicilioFiscal?.calle && validateAddress(thirdPartyData.domicilioFiscal.calle) && (
+                        <Text style={styles.errorText}>
+                          {validateAddress(thirdPartyData.domicilioFiscal.calle)}
+                        </Text>
+                      )}
+                      {key === 'num_exterior' && thirdPartyData.domicilioFiscal?.num_exterior && validateAddress(thirdPartyData.domicilioFiscal.num_exterior) && (
+                        <Text style={styles.errorText}>
+                          {validateAddress(thirdPartyData.domicilioFiscal.num_exterior)}
+                        </Text>
+                      )}
+                      {key === 'codigo_postal' && thirdPartyData.domicilioFiscal?.codigo_postal && validatePostalCode(thirdPartyData.domicilioFiscal.codigo_postal) && (
+                        <Text style={styles.errorText}>
+                          {validatePostalCode(thirdPartyData.domicilioFiscal.codigo_postal)}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* Botones Step 1 */}
+              <View style={styles.buttonsContainer}>
+                <TouchableOpacity
+                  style={[styles.button, styles.outlineButton]}
+                  onPress={() => router.back()}
+                  disabled={currentLoading}
+                >
+                  <Text style={styles.outlineButtonText}>
+                    Regresar
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.button, styles.primaryButton, currentLoading && styles.disabledButton]}
+                  onPress={handleNextStep}
+                  disabled={currentLoading}
+                >
+                  {currentLoading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>
+                      Continuar a Regímenes
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* STEP 2: REGÍMENES FISCALES */}
+        {currentStep === 'regimenes' && (
+          <>
+            {/* Información del Tercero (solo lectura) */}
+            <View style={styles.card}>
+              <View style={styles.sectionHeader}>
+                <FileText size={20} color="#1A2A6C" />
+                <Text style={styles.sectionTitle}>Información del Tercero</Text>
+              </View>
+              <View style={styles.infoContainer}>
+                <Text style={styles.infoText}>
+                  <Text style={styles.infoLabel}>RFC: </Text>
+                  {thirdPartyData.rfc}
                 </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+                <Text style={styles.infoText}>
+                  <Text style={styles.infoLabel}>Nombre: </Text>
+                  {thirdPartyData.nombre_razon} {thirdPartyData.primer_apellido} {thirdPartyData.segundo_apellido}
+                </Text>
+                <Text style={styles.infoText}>
+                  <Text style={styles.infoLabel}>Email: </Text>
+                  {thirdPartyData.email_facturacion_text}
+                </Text>
+              </View>
+            </View>
+
+            {/* Sección de Regímenes Fiscales */}
+            <View style={styles.card}>
+              <View style={styles.sectionHeader}>
+                <FileText size={20} color="#1A2A6C" />
+                <Text style={styles.sectionTitle}>Regímenes Fiscales</Text>
+              </View>
+
+              <View style={styles.regimenHeader}>
+                <Text style={styles.regimenHeaderText}>Regímenes Fiscales *</Text>
+                <TouchableOpacity
+                  style={styles.deselectButton}
+                  onPress={() => setSelectedRegimens([])}
+                >
+                  <Text style={styles.deselectButtonText}>Deseleccionar Todos</Text>
+                </TouchableOpacity>
+              </View>
+
+              {renderRegimenList()}
+            </View>
+
+            {/* Botones Step 2 */}
+            <View style={styles.buttonsContainer}>
+              <TouchableOpacity
+                style={[styles.button, styles.outlineButton]}
+                onPress={handlePrevStep}
+                disabled={currentLoading}
+              >
+                <Text style={styles.outlineButtonText}>Regresar a Datos</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.button, styles.primaryButton, currentLoading && styles.disabledButton]}
+                onPress={handleFinalSubmit}
+                disabled={currentLoading}
+              >
+                {currentLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Finalizar Registro</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* STEP 3: ÉXITO */}
+        {currentStep === 'exito' && (
+          <SuccessStep 
+            onResetData={resetFormData}
+            onBack={() => setCurrentStep('regimenes')}
+          />
+        )}
       </ScrollView>
     </View>
   );
 }
 
-// Los estilos se mantienen igual...
+// ========== ESTILOS ==========
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1A2A6C',
-    marginLeft: 20
-  },
-  headerPlaceholder: {
-    width: 32,
   },
   scrollView: {
     flex: 1,
   },
   contentContainer: {
     padding: 16,
+    paddingBottom: 32,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1A2A6C',
+    marginLeft: 20,
+    marginBottom: 16,
+  },
+  // Estilos comunes
+  card: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    marginBottom: 16,
+  },
+  transparentCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+    borderWidth: 0,
+    marginTop: -55,
+    marginLeft: 35
+  },
+  logo: {
+    width: 200,
+    height: 100,
+    marginBottom: 30,
+    marginTop: 85
+  },
+  largeLogo: {
+    width: 300 * 0.8,
+    height: 150 * 0.8,
+    marginBottom: 30,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -643,11 +1259,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#1f2937',
-  },
-  editModeText: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginLeft: 8,
   },
   section: {
     marginBottom: 24,
@@ -665,11 +1276,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#1A2A6C',
-  },
-  editModeSubText: {
-    fontSize: 14,
-    fontWeight: 'normal',
-    color: '#6b7280',
   },
   formGrid: {
     gap: 16,
@@ -701,7 +1307,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 24,
-    marginBottom: 24,
   },
   button: {
     flex: 1,
@@ -732,39 +1337,178 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#fff',
   },
-  //Estilo para el logo
-  transparentCard: {
-    backgroundColor: 'transparent',
-    shadowOpacity: 0,
-    elevation: 0,
-    borderWidth: 0,
-    marginTop: -55,
-    marginLeft: 35
+  // Estilos para información del tercero
+  infoContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 8,
   },
-
-  logo: {
-    width: 200,
-    height: 100,
-    marginBottom: 30,
-    marginTop: 85
+  infoText: {
+    fontSize: 14,
+    marginBottom: 8,
+    color: '#374151',
   },
-
-  largeLogo: {
-    width: 300 * 0.8, // Más ancho
-    height: 150 * 0.8, // Más alto
-    marginBottom: 30,
+  infoLabel: {
+    fontWeight: '600',
+    color: '#1A2A6C',
   },
-  card: {
-    width: "100%",
-    backgroundColor: "#fff",
-    borderRadius: 12,
+  // Estilos para regímenes fiscales
+  regimenHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  regimenHeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  deselectButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+  },
+  deselectButtonText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  loadingContainer: {
+    alignItems: 'center',
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-    marginTop: 5
+  },
+  loadingText: {
+    marginTop: 8,
+    color: '#6b7280',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    borderStyle: 'dashed',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#1A2A6C',
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Estilos para la tabla de regímenes
+  tableContainer: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    height: 400,
+    overflow: 'hidden',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  tableHeaderCell: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    flex: 1,
+  },
+  flatList: {
+    flex: 1,
+  },
+  flatListContent: {
+    flexGrow: 1,
+  },
+  centerCell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 0.8,
+  },
+  regimenItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  regimenRow: {
+    flexDirection: 'row',
+    padding: 12,
+    alignItems: 'center',
+    minHeight: 60,
+  },
+  regimenCell: {
+    fontSize: 12,
+    flex: 1,
+  },
+  codeCell: {
+    fontWeight: '600',
+    color: '#1A2A6C',
+  },
+  descriptionCell: {
+    flex: 2,
+    paddingRight: 8,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    padding: 6,
+    fontSize: 12,
+    minWidth: 100,
+    textAlign: 'center',
+  },
+  usosSection: {
+    backgroundColor: '#f8f9fa',
+  },
+  usosHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 8,
+  },
+  usosHeaderText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1A2A6C',
+    flex: 1,
+  },
+  usosContent: {
+    padding: 8,
+  },
+  usosTableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#e5e7eb',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  usosHeaderCell: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#374151',
+    flex: 1,
+  },
+  usoRow: {
+    flexDirection: 'row',
+    padding: 8,
+    alignItems: 'center',
+    minHeight: 45,
+  },
+  usoCell: {
+    fontSize: 10,
+    flex: 1,
   },
 });
-
