@@ -1,18 +1,18 @@
 import { CARGAR_CSF } from "@/app/services/apiConstans";
 import requests from "@/app/services/requests";
 import * as DocumentPicker from "expo-document-picker";
-import { useRouter } from "expo-router"; // ✅ Importar useRouter
+import { useRouter } from "expo-router";
 import { FileText, Upload, X } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface FileUploadProps {
@@ -20,7 +20,7 @@ interface FileUploadProps {
   acceptedTypes?: string[];
   maxFileSize?: number;
   uploadType: "cfdi" | "constancia";
-  redirectTo?: string; // ✅ Nueva prop para la ruta de redirección
+  redirectTo?: string;
 }
 
 interface PreviewFile {
@@ -36,9 +36,9 @@ const FileUpload = ({
   acceptedTypes = [".pdf", ".xml", ".zip"],
   maxFileSize = 10,
   uploadType,
-  redirectTo = "/form-datos-fiscales", // ✅ Ruta por defecto
+  redirectTo = "/form-datos-fiscales",
 }: FileUploadProps) => {
-  const router = useRouter(); // ✅ Usar el hook de router
+  const router = useRouter();
   const [previews, setPreviews] = useState<PreviewFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -52,7 +52,7 @@ const FileUpload = ({
       ? "Tipos aceptados: XML, PDF • Máximo"
       : "Tipos aceptados: PDF • Máximo";
 
-  // ✅ Detecta el tipo MIME
+  //Detecta el tipo MIME
   const getMimeType = (filename: string): string => {
     const ext = filename.split(".").pop()?.toLowerCase();
     switch (ext) {
@@ -67,7 +67,7 @@ const FileUpload = ({
     }
   };
 
-  // ✅ Convierte URI blob:// a File en web o deja tal cual en móvil
+  //Convierte URI blob:// a File en web o deja tal cual en móvil
   async function getFileObject(preview: PreviewFile, mimeType: string) {
     if (Platform.OS === "web" && preview.uri?.startsWith("blob:")) {
       const response = await fetch(preview.uri);
@@ -82,7 +82,7 @@ const FileUpload = ({
     } as any;
   }
 
-  // ✅ Manejo de archivos seleccionados
+  // Manejo de archivos seleccionados
   const handleFiles = useCallback(
     async (files: any[]) => {
       const newPreviews: PreviewFile[] = [];
@@ -127,9 +127,6 @@ const FileUpload = ({
 
             formData.append("archivo", fileObj);
 
-            console.log("📤 Subiendo:", preview.name);
-            console.log("🧾 Tipo MIME:", mimeType);
-
             // Depuración opcional
             for (const [key, value] of formData.entries()) {
               console.log("FormData:", key, value);
@@ -140,8 +137,6 @@ const FileUpload = ({
               data: formData,
             });
 
-            console.log("✅ Respuesta API:", response.data);
-
             if (response.data?.success) {
               allResults.push(response.data);
             } else {
@@ -150,7 +145,7 @@ const FileUpload = ({
               );
             }
           } catch (error: any) {
-            console.error("❌ Error en la carga:", error);
+            console.error("Error en la carga:", error);
 
             let errorMessage = `Error al subir ${preview.name}`;
             if (error.response?.data?.message) {
@@ -175,30 +170,35 @@ const FileUpload = ({
         );
 
         if (allResults.length > 0) {
-          onFilesUploaded(allResults);
-          
-          // ✅ Redirección automática con router.push
-          Alert.alert(
-            "Éxito",
-            `${allResults.length} archivo(s) subido(s) correctamente. Redirigiendo al formulario...`
-          );
+  onFilesUploaded(allResults);
 
-          // ✅ Navegar automáticamente después de 1.5 segundos
-          setTimeout(() => {
-            router.push('/FormDatosFiscalesScreen');
-          }, 1500);
-        }
+  Alert.alert(
+    "Éxito",
+    `${allResults.length} archivo(s) subido(s) correctamente. Redirigiendo al formulario...`
+  );
+
+  //Extraer el primer resultado (tu backend devuelve solo uno normalmente)
+  const fiscalResponse = allResults[0];
+  
+  setTimeout(() => {
+    router.push({
+      pathname: "/FormDatosFiscalesScreen",
+      params: { fiscalData: JSON.stringify(fiscalResponse) },
+    });
+  }, 1500);
+}
+
       } catch (error) {
-        console.error("❌ Error general:", error);
+        console.error("Error general:", error);
         Alert.alert("Error", "Error al procesar los archivos");
       } finally {
         setIsUploading(false);
       }
     },
-    [acceptedTypes, maxFileSize, onFilesUploaded, router, redirectTo] // ✅ Agregar router y redirectTo a las dependencias
+    [acceptedTypes, maxFileSize, onFilesUploaded, router, redirectTo] 
   );
 
-  // ✅ Selección de archivo
+  //Selección de archivo
   const handleFilePick = async () => {
     if (isUploading) return;
 
@@ -224,7 +224,7 @@ const FileUpload = ({
 
       await handleFiles(files);
     } catch (error) {
-      console.error("❌ Error al seleccionar archivo:", error);
+      console.error("Error al seleccionar archivo:", error);
       Alert.alert("Error", "No se pudo seleccionar el archivo");
     }
   };
