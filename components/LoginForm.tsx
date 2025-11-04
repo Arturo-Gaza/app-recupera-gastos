@@ -24,7 +24,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async (email: string, password: string, setLoading: (val: boolean) => void) => {
+const handleLogin = async (email: string, password: string, setLoading: (val: boolean) => void) => {
     try {
       setLoading(true);
 
@@ -59,23 +59,33 @@ export default function LoginScreen() {
         // Guardar en AsyncStorage
         await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(dataSST));
 
-        //Alert.alert("Bienvenido", `Hola ${data.data.nombre}`);
         if (!dataSST.tieneSuscripcionActivaSST) {
           router.replace("/Planes");
         } else if (!dataSST.DatosCompletosSST) {
           router.replace("/datosAlert");
-        } else {
+        } else if (!dataSST.tienDatoFiscalSST) {
           router.replace("/fiscalesAlert");
+        }else{
+          Alert.alert("yA TIENE TODO");
         }
 
-
-
       } else {
-        Alert.alert("Error", data?.message || "Credenciales incorrectas");
+        // Mostrar solo el mensaje principal
+        const errorMessage = data?.message;
+        Alert.alert("Aviso", errorMessage);
       }
     } catch (error: any) {
-      console.error("Error en login:", error);
-      Alert.alert("Error", "No se pudo conectar al servidor");
+      
+      // Manejar errores de red o del servidor
+      let errorMessage = "No se pudo conectar al servidor";
+      
+      if (error.response?.data) {
+        errorMessage = error.response.data.message || errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert("Aviso", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -142,9 +152,9 @@ export default function LoginScreen() {
             <TouchableOpacity onPress={() => router.push("/register")}>
               {/*Redirige al registro */}
               <Text style={styles.link}>Regístrate aquí</Text>
-            </TouchableOpacity>
+            </TouchableOpacity >
             <Text style={{ marginHorizontal: 5 }}>•</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/forgotPassword")}>
               <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
             </TouchableOpacity>
           </View>

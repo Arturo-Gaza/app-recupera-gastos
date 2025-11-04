@@ -116,17 +116,20 @@ function SuccessStep({
           {
             text: 'Sí, registrar',
             onPress: () => {
-              //router.replace('/ruta-del-formulario');
+              router.push('/metodoRegistroFiscal');
             }
           }
         ]
       );
     }
+    router.push('/metodoRegistroFiscal');
+            
   };
 
   return (
     <View style={successStyles.container}>
-      <View style={successStyles.content}>
+      <View style={styles.card}>
+           <View style={successStyles.content}>
         <View style={successStyles.iconContainer}>
           <CheckCircle size={64} color="#10B981" />
         </View>
@@ -164,6 +167,8 @@ function SuccessStep({
           </TouchableOpacity>
         </View>
       </View>
+      </View>
+     
     </View>
   );
 }

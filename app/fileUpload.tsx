@@ -1,7 +1,6 @@
-import React from "react";
-import { View, StyleSheet, Alert } from "react-native";
+import FileUpload from "@/components/usuario/FileUpload";
 import { Stack, useRouter } from "expo-router";
-import FileUpload from "@/components/usuario/FileUpload"; 
+import { Alert, StyleSheet, View } from "react-native";
 
 export default function SubirArchivosScreen() {
   const router = useRouter();
@@ -10,16 +9,7 @@ export default function SubirArchivosScreen() {
    * Función para manejar los archivos subidos
    */
   const handleFilesUploaded = (data: any) => {
-    console.log("Archivos procesados:", data);
     
-    // Aquí puedes hacer algo con los datos de los archivos subidos
-    // Por ejemplo, guardarlos en un estado, enviarlos a otra API, etc.
-    
-    // Opcional: Mostrar un mensaje de éxito
-    Alert.alert(
-      "Éxito",
-      `${data.length} archivo(s) procesado(s) correctamente`
-    );
   };
 
   /**
@@ -34,12 +24,12 @@ export default function SubirArchivosScreen() {
       <Stack.Screen 
         options={{ 
           title: "Subir Archivos Fiscales",
-          headerShown: true // Puedes cambiarlo a false si no quieres header
+          headerShown: false
         }} 
       />
       
       <FileUpload
-        uploadType="cfdi" // o "constancia" según lo que necesites
+        uploadType="cfdi"
         onFilesUploaded={handleFilesUploaded}
         acceptedTypes={['.pdf', '.xml', '.zip']}
         maxFileSize={10}

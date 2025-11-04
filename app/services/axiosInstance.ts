@@ -1,5 +1,5 @@
-import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 import config from "../assets/config.json";
 
 const axiosInstance = axios.create({
@@ -31,7 +31,7 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("Error de API:", error?.response || error);
+    //console.error("Error de API:", error?.response || error);
     return Promise.reject(error);
   }
 );

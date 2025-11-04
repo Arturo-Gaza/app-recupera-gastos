@@ -7,12 +7,13 @@ import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 interface FileUploadProps {
@@ -172,10 +173,6 @@ const FileUpload = ({
         if (allResults.length > 0) {
   onFilesUploaded(allResults);
 
-  Alert.alert(
-    "Éxito",
-    `${allResults.length} archivo(s) subido(s) correctamente. Redirigiendo al formulario...`
-  );
 
   //Extraer el primer resultado (tu backend devuelve solo uno normalmente)
   const fiscalResponse = allResults[0];
@@ -235,9 +232,17 @@ const FileUpload = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{getUploadTitle()}</Text>
-
-      <TouchableOpacity
+        <View style={[styles.card, styles.transparentCard]}>
+                <Image
+                  source={require('@/assets/images/rg-logo.png')}
+                  style={[styles.logo, styles.largeLogo]}
+                  resizeMode="contain"
+                />
+              </View>
+     
+      <View style={styles.card}>
+         <Text style={styles.title}>{getUploadTitle()}</Text>
+          <TouchableOpacity
         style={[styles.uploadArea, isUploading && styles.uploadAreaDisabled]}
         onPress={handleFilePick}
         disabled={isUploading}
@@ -260,6 +265,7 @@ const FileUpload = ({
           {getAcceptedTypesText()} {maxFileSize}MB por archivo
         </Text>
       </TouchableOpacity>
+      </View>
 
       {previews.length > 0 && (
         <View style={styles.previewsContainer}>
@@ -378,6 +384,40 @@ const styles = StyleSheet.create({
   },
   fileSize: { fontSize: 12, color: "#6B7280" },
   removeButton: { padding: 4 },
+   //Estilo para el logo
+  transparentCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+    borderWidth: 0,
+    marginTop: 60,
+    marginLeft: 45
+  },
+
+  logo: {
+    width: 200,
+    height: 100,
+    marginBottom: 30,
+    marginTop: -55
+  },
+
+  largeLogo: {
+    width: 300 * 0.8, // Más ancho
+    height: 150 * 0.8, // Más alto
+    marginBottom: 30,
+  },
+   card: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    marginTop: -25
+  },
 });
 
 export default FileUpload;

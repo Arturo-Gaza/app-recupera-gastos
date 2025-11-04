@@ -1,22 +1,21 @@
-import React, { useState } from 'react';
+import { ENVIARCORREOCONF, REGISTER, VALIDARCORREOCONF } from '@/app/services/apiConstans';
+import requests from '@/app/services/requests';
+import { styles } from '@/app/styles/RegisterStyles';
+import { Picker } from '@react-native-picker/picker';
+import { router } from 'expo-router';
+import { ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react-native';
+import { useRef, useState } from 'react';
 import {
-  View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  Image
+  View
 } from 'react-native';
-import { router } from 'expo-router';
-import { ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react-native';
-import { Picker } from '@react-native-picker/picker';
-import { styles } from '@/app/styles/RegisterStyles';
-import requests from '@/app/services/requests';
-import { ENVIARCORREOCONF, REGISTER, VALIDARCORREOCONF } from '@/app/services/apiConstans';
 import { EmailRegisteredModal } from './modales/AlertModal';
 
 export function Register() {
@@ -33,6 +32,10 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showEmailRegisteredModal, setShowEmailRegisteredModal] = useState(false);
+
+  // Refs para los inputs OTP
+  const emailInputRefs = useRef<Array<TextInput>>([]);
+  const smsInputRefs = useRef<Array<TextInput>>([]);
 
   // Función de validación de contraseña
   const validatePassword = (pass: string) => {
@@ -127,20 +130,64 @@ export function Register() {
     console.log('Código reenviado');
   };
 
+  // FUNCIÓN OTP MEJORADA CON NAVEGACIÓN AUTOMÁTICA
   const handleOTPChange = (value: string, index: number, isEmail: boolean) => {
-    if (value.length > 1) return;
+    // Solo permitir números
+    const numericValue = value.replace(/[^0-9]/g, '');
+    if (numericValue.length > 1) return;
 
     const newOTP = isEmail ? [...otpEmail] : [...otpSMS];
-    newOTP[index] = value;
+    newOTP[index] = numericValue;
 
     isEmail ? setOtpEmail(newOTP) : setOtpSMS(newOTP);
+
+    // Navegación automática al siguiente campo
+    if (numericValue && index < 5) {
+      const refs = isEmail ? emailInputRefs.current : smsInputRefs.current;
+      refs[index + 1]?.focus();
+    }
   };
 
-  type StepType = "registrar" | "email" | "sms" | "success";
+  // Manejar tecla backspace para navegación automática hacia atrás
+  const handleKeyPress = (e: any, index: number, isEmail: boolean) => {
+    if (e.nativeEvent.key === 'Backspace') {
+      const currentOTP = isEmail ? otpEmail : otpSMS;
+      
+      if (!currentOTP[index] && index > 0) {
+        // Si el campo actual está vacío y se presiona backspace, ir al anterior
+        const refs = isEmail ? emailInputRefs.current : smsInputRefs.current;
+        refs[index - 1]?.focus();
+      }
+    }
+  };
+
+  // Render OTP mejorado con navegación automática
+  const renderOTPInput = (otp: string[], isEmail: boolean) => {
+    const refs = isEmail ? emailInputRefs : smsInputRefs;
+    
+    return (
+      <View style={styles.otpContainer}>
+        {otp.map((digit, index) => (
+          <TextInput
+            key={index}
+            ref={ref => {
+              if (ref) refs.current[index] = ref;
+            }}
+            style={styles.otpInput}
+            value={digit}
+            onChangeText={(value) => handleOTPChange(value, index, isEmail)}
+            onKeyPress={(e) => handleKeyPress(e, index, isEmail)}
+            keyboardType="number-pad"
+            maxLength={1}
+            textAlign="center"
+            selectTextOnFocus
+          />
+        ))}
+      </View>
+    );
+  };
 
   //Funcion de registrar y enviar el correo
-
-
   const handleRegisterSubmit = async () => {
     // --- Validaciones ---
     if (!telefono.trim()) {
@@ -229,7 +276,6 @@ export function Register() {
       setLoading(false);
     }
   };
-
 
   //Formulario General
   const renderRegisterForm = () => (
@@ -383,21 +429,6 @@ export function Register() {
     </ScrollView>
   );
 
-  const renderOTPInput = (otp: string[], isEmail: boolean) => (
-    <View style={styles.otpContainer}>
-      {otp.map((digit, index) => (
-        <TextInput
-          key={index}
-          style={styles.otpInput}
-          value={digit}
-          onChangeText={(value) => handleOTPChange(value, index, isEmail)}
-          keyboardType="number-pad"
-          maxLength={1}
-        />
-      ))}
-    </View>
-  );
-
   const renderEmailVerification = () => (
     <View style={styles.formContainer}>
       <Text style={styles.description}>
@@ -530,4 +561,3 @@ export function Register() {
     </KeyboardAvoidingView>
   );
 }
-
