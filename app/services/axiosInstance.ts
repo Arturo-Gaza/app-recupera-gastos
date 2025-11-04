@@ -4,12 +4,10 @@ import config from "../assets/config.json";
 
 const axiosInstance = axios.create({
   baseURL: config.BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: {}, // 👈 importante: no forzar Content-Type global
 });
 
-// Interceptor para agregar el token automáticamente
+// Interceptor para agregar token automáticamente
 axiosInstance.interceptors.request.use(
   async (config) => {
     try {

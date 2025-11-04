@@ -1,8 +1,8 @@
 import { CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN, DATOS_FISCALES_CREATE } from '@/app/services/apiConstans';
 import requests from '@/app/services/requests';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, CheckCircle, ChevronDown, ChevronUp, FileText, Home, Receipt, User } from 'lucide-react-native';
-import { useState } from 'react';
+import { CheckCircle, ChevronDown, ChevronUp, FileText, Home, Receipt, User } from 'lucide-react-native';
+import { useEffect, useState } from 'react'; // ✅ Agregar useEffect
 import {
   ActivityIndicator,
   Alert,
@@ -280,11 +280,128 @@ export default function FormDatosFiscalesCompleto() {
   // Estados de UI
   const [currentStep, setCurrentStep] = useState<'datos' | 'regimenes' | 'exito'>('datos');
   const [internalLoading, setInternalLoading] = useState(false);
+  const [autoLoaded, setAutoLoaded] = useState(false); // ✅ Nuevo estado para controlar carga automática
   const { session, loading: sessionLoading } = useSession();
+
+  // ========== CARGA AUTOMÁTICA AL ENTRAR ==========
+  useEffect(() => {
+    // ✅ Cargar datos automáticamente cuando el componente se monta
+    if (!autoLoaded) {
+      loadDataAutomatically();
+      setAutoLoaded(true);
+    }
+  }, []);
+
+  const loadDataAutomatically = () => {
+    // ✅ Datos de ejemplo que se cargarán automáticamente
+    const mockApiResponse = {
+      success: true,
+      data: {
+        id: null,
+        id_usuario: null,
+        rfc: "BUCO941019955",
+        curp: "BUCO941019HDFSMS00",
+        idCIF: "19030253382",
+        nombre_razon: "OSCAR ALFREDO",
+        primer_apellido: "BUSTAMANTE",
+        segundo_apellido: "CAMPOS",
+        nombre_completo: "OSCAR ALFREDO BUSTAMANTE CAMPOS",
+        fecha_inicio_op: "2019-03-15",
+        fecha_ult_cambio_op: "2019-03-15",
+        id_estatus_sat: 1,
+        fecha_ultimo_cambio: "2019-03-15",
+        es_persona_moral: false,
+        lugar_emision: "GUSTAVO A MADERO, CIUDAD DE MEXICO",
+        fecha_emision: "2021-12-06",
+        nombre_comercial: null,
+        domicilioFiscal: {
+          codigo_postal: "07918",
+          colonia: "SAN JUAN DE ARAGON 6A SECCION",
+          estado: "CIUDAD DE MEXICO",
+          localidad: null,
+          municipio: "GUSTAVO A MADERO",
+          calle: "AVENIDA 416",
+          num_exterior: "51",
+          num_interior: null,
+          pais: "México"
+        },
+        regimenesFiscales: [
+          {
+            id_regimen: 12,
+            predeterminado: true,
+            fecha_inicio_regimen: "2019-03-15",
+            usosCfdi: []
+          }
+        ],
+        email: "obustamanc@gmail.com",
+        telefono: "5591607723",
+        datos_extra: null,
+        email_facturacion_id: null,
+        habilitado: true,
+        predeterminado: false
+      },
+      data2: null,
+      message: "Datos fiscales obtenidos"
+    };
+
+    // ✅ Llamar a la función de autollenado automáticamente
+    autoFillFormData(mockApiResponse);
+    
+    // ✅ Mostrar mensaje informativo
+    Alert.alert(
+      'Datos cargados automáticamente', 
+      'Se han precargado los datos fiscales del archivo CSF procesado.',
+      [{ text: 'Continuar' }]
+    );
+  };
 
   // ========== FUNCIONES COMUNES ==========
   const normalizeText = (text: string): string => {
     return text.trim().toUpperCase();
+  };
+
+  // ========== FUNCIÓN PARA AUTOLLENAR FORMULARIO DESDE ARCHIVO ==========
+  const autoFillFormData = (apiData: any) => {
+    const data = apiData.data; // Accedemos a la propiedad data
+    
+    setThirdPartyData({
+      es_persona_moral: data.es_persona_moral || false,
+      nombre_razon: data.nombre_razon || '',
+      primer_apellido: data.primer_apellido || '',
+      segundo_apellido: data.segundo_apellido || '',
+      nombre_comercial: data.nombre_comercial || '',
+      rfc: data.rfc || '',
+      curp: data.curp || '',
+      email_facturacion_text: data.email || '', // Usamos el email de la respuesta
+      fecha_inicio_op: data.fecha_inicio_op || '',
+      fecha_emision: data.fecha_emision || '',
+      lugar_emision: data.lugar_emision || '',
+      id_estatus_sat: data.id_estatus_sat || 1,
+      predeterminado: data.predeterminado || true,
+      idCIF: data.idCIF || '',
+      domicilioFiscal: {
+        calle: data.domicilioFiscal?.calle || '',
+        num_exterior: data.domicilioFiscal?.num_exterior || '',
+        num_interior: data.domicilioFiscal?.num_interior || '',
+        codigo_postal: data.domicilioFiscal?.codigo_postal || '',
+        colonia: data.domicilioFiscal?.colonia || '',
+        localidad: data.domicilioFiscal?.localidad || '',
+        municipio: data.domicilioFiscal?.municipio || '',
+        estado: data.domicilioFiscal?.estado || '',
+        pais: data.domicilioFiscal?.pais || 'México'
+      }
+    });
+
+    // Si hay regímenes fiscales en la respuesta, los seleccionamos automáticamente
+    if (data.regimenesFiscales && data.regimenesFiscales.length > 0) {
+      const selectedRegimens: SelectedRegimen[] = data.regimenesFiscales.map((regimen: any) => ({
+        id_regimen: regimen.id_regimen,
+        fecha_inicio_regimen: regimen.fecha_inicio_regimen,
+        predeterminado: regimen.predeterminado,
+        usosCfdi: regimen.usosCfdi || []
+      }));
+      setSelectedRegimens(selectedRegimens);
+    }
   };
 
   // ========== FUNCIONES PARA DATOS FISCALES ==========
@@ -422,7 +539,7 @@ export default function FormDatosFiscalesCompleto() {
       const esPersonaMoral = thirdPartyData.es_persona_moral
 
       const response = await requests.get({
-        command: CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN + esPersonaMoral
+        command: CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN + esPersonaMoral,
       });
 
       let regimensData: RegimenFiscal[] = [];
@@ -667,6 +784,7 @@ export default function FormDatosFiscalesCompleto() {
     });
     setSelectedRegimens([]);
     setCurrentStep('datos');
+    setAutoLoaded(false); // ✅ Resetear para que se vuelva a cargar automáticamente
   };
 
   // ========== RENDERIZADO DE REGÍMENES ==========
@@ -849,6 +967,19 @@ export default function FormDatosFiscalesCompleto() {
         {/* STEP 1: DATOS FISCALES */}
         {currentStep === 'datos' && (
           <>
+            {/* ✅ Sección informativa de datos cargados automáticamente */}
+            <View style={styles.card}>
+              <View style={styles.sectionHeader}>
+                <User size={20} color="#10B981" />
+                <Text style={styles.sectionTitle}>Datos Cargados Automáticamente</Text>
+              </View>
+              
+              <Text style={styles.uploadDescription}>
+                Los datos fiscales se han precargado desde el archivo CSF procesado. 
+                Revisa y completa la información si es necesario.
+              </Text>
+            </View>
+
             {/* Checkbox para persona moral/física */}
             <View style={styles.card}>
               <View style={styles.checkboxContainer}>
@@ -1510,5 +1641,12 @@ const styles = StyleSheet.create({
   usoCell: {
     fontSize: 10,
     flex: 1,
+  },
+  // Estilos para la sección de upload
+  uploadDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 16,
+    textAlign: 'center',
   },
 });

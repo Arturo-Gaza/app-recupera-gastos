@@ -13,7 +13,7 @@ export default function PlanesScreen() {
     
     switch (method) {
       case 'constancia':
-        // router.push('/UploadCSF');
+        router.push('/fileUpload');
         break;
       case 'manual':
         router.push('/FormDatosFiscalesScreen'); 
