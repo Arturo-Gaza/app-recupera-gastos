@@ -66,7 +66,7 @@ const handleLogin = async (email: string, password: string, setLoading: (val: bo
         } else if (!dataSST.tienDatoFiscalSST) {
           router.replace("/fiscalesAlert");
         }else{
-          Alert.alert("yA TIENE TODO");
+          router.replace("/dashboard");
         }
 
       } else {

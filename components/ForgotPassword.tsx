@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Image,
     Modal,
     SafeAreaView,
     ScrollView,
@@ -11,7 +12,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { CAMBIO_PASSWORD, RECUPERAPASS_CORREO, VALIDA_CODIGO } from '../app/services/apiConstans';
 
@@ -675,6 +676,13 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
 
   return (
     <SafeAreaView style={styles.container}>
+        <View style={[styles.card, styles.transparentCard]}>
+                  <Image
+                    source={require('@/assets/images/rg-logo.png')}
+                    style={[styles.logo, styles.largeLogo]}
+                    resizeMode="contain"
+                  />
+                </View>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Card style={styles.card}>
           <View style={styles.header}>
@@ -735,11 +743,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+   
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
     padding: 16,
+     marginTop: -200
   },
   card: {
     width: '100%',
@@ -995,5 +1005,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A2A6C',
     borderRadius: 8,
     alignItems: 'center',
+  },
+   //Estilo para el logo
+  transparentCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+    borderWidth: 0,
+    marginTop: 120,
+    marginLeft: 70
+  },
+
+  logo: {
+    width: 200,
+    height: 100,
+    marginBottom: 30,
+    marginTop: -55
+  },
+
+  largeLogo: {
+    width: 300 * 0.8, // Más ancho
+    height: 150 * 0.8, // Más alto
+    marginBottom: 30,
   },
 });
