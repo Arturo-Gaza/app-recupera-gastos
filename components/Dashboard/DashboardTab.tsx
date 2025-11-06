@@ -122,37 +122,86 @@ export function DashboardTab() {
     legendFontSize: 12,
   }));
 
-  // PREPARAR DATOS PARA GRÁFICA DE BARRAS (Tendencia mensual)
-  const prepareBarChartData = () => {
-    if (!apiData?.data_mensual) return { labels: [], datasets: [] };
+// PREPARAR DATOS PARA GRÁFICA DE BARRAS AGRUPADAS
+const prepareBarChartData = () => {
+  if (!apiData?.data_mensual) return { labels: [], datasets: [] };
 
-    const labels: string[] = [];
+  const labels: string[] = [];
+  
+  // Recolectar todos los estatus únicos que aparecen en los datos
+  const allStatus: number[] = [];
+  apiData.data_mensual.forEach(yearData => {
+    yearData.meses.forEach(mesData => {
+      mesData.estatus.forEach(estatusItem => {
+        if (!allStatus.includes(estatusItem.estado_id)) {
+          allStatus.push(estatusItem.estado_id);
+        }
+      });
+    });
+  });
+
+  // Crear un dataset para cada estatus
+  const datasets = allStatus.map(estatusId => {
     const data: number[] = [];
-
-    apiData.data_mensual.forEach((yearData) => {
-      yearData.meses.forEach((mesData) => {
-        const label = `${mesData.mes} ${yearData.anio}`;
-        labels.push(label);
+    const estatusName = apiData.estadisticas_por_estatus.find(e => e.estatus_id === estatusId)?.descripcion_estatus_solicitud || `Estatus ${estatusId}`;
+    
+    apiData.data_mensual.forEach(yearData => {
+      yearData.meses.forEach(mesData => {
+        // Si es el primer estatus, agregar la etiqueta
+        if (estatusId === allStatus[0]) {
+          labels.push(`${mesData.mes} ${yearData.anio}`);
+        }
         
-        // Sumar todos los tickets del mes
-        const totalMes = mesData.estatus.reduce((sum, estatus) => sum + estatus.total, 0);
-        data.push(totalMes);
+        // Encontrar el total para este estatus en este mes
+        const estatusMes = mesData.estatus.find(e => e.estado_id === estatusId);
+        data.push(estatusMes?.total || 0);
       });
     });
 
-    return {
-      labels,
-      datasets: [
-        {
-          data,
-          color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-          strokeWidth: 2,
-        },
-      ],
-    };
-  };
+    const baseColor = STATUS_COLORS[estatusId] || '#666666';
+    const r = parseInt(baseColor.slice(1, 3), 16);
+    const g = parseInt(baseColor.slice(3, 5), 16);
+    const b = parseInt(baseColor.slice(5, 7), 16);
 
-  const barChartData = prepareBarChartData();
+    return {
+      data,
+      color: (opacity = 1) => `rgba(${r}, ${g}, ${b}, ${opacity})`,
+      strokeWidth: 2,
+    };
+  });
+
+  return {
+    labels: labels.slice(0, apiData.data_mensual.reduce((sum, year) => sum + year.meses.length, 0)),
+    datasets,
+  };
+};
+
+const barChartData = prepareBarChartData();
+
+// CONFIGURACIÓN DE GRÁFICAS PARA BARRAS AGRUPADAS
+const chartConfig = {
+  backgroundColor: '#ffffff',
+  backgroundGradientFrom: '#ffffff',
+  backgroundGradientTo: '#ffffff',
+  decimalPlaces: 0,
+  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+  style: {
+    borderRadius: 16,
+  },
+  propsForDots: {
+    r: '6',
+    strokeWidth: '2',
+    stroke: '#ffa726',
+  },
+  barPercentage: 0.7,
+  useShadowColorFromDataset: false,
+  propsForBackgroundLines: {
+    strokeWidth: 1,
+    stroke: '#e5e5e5',
+  },
+};
+
 
   // CÁLCULOS DE ESTADÍSTICAS BASADOS EN LA ESTRUCTURA REAL
   const totalTickets = apiData?.total_tickets || 0;
@@ -179,25 +228,6 @@ export function DashboardTab() {
     setFechaData(prev => ({ ...prev, fecha_fin: text }));
   };
 
-  // CONFIGURACIÓN DE GRÁFICAS
-  const chartConfig = {
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
-    decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: '6',
-      strokeWidth: '2',
-      stroke: '#ffa726',
-    },
-    barPercentage: 0.5,
-    useShadowColorFromDataset: false,
-  };
 
   const pieChartConfig = {
     backgroundColor: '#ffffff',
@@ -316,28 +346,29 @@ export function DashboardTab() {
           )}
         </View>
 
-        {/* Gráfica de Barras - Tendencia mensual */}
-        <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>Tendencia mensual</Text>
-          </View>
-          {barChartData.labels.length > 0 ? (
-            <BarChart
-              data={barChartData}
-              width={Dimensions.get('window').width - 72}
-              height={220}
-              yAxisLabel=""
-              yAxisSuffix=""
-              chartConfig={chartConfig}
-              verticalLabelRotation={30}
-              fromZero
-            />
-          ) : (
-            <View style={styles.noDataContainer}>
-              <Text style={styles.noDataText}>No hay datos mensuales</Text>
-            </View>
-          )}
-        </View>
+{/* Gráfica de Barras - Tendencia mensual */}
+<View style={styles.chartCard}>
+  <View style={styles.chartHeader}>
+    <Text style={styles.chartTitle}>Tendencia mensual</Text>
+  </View>
+  {barChartData.labels.length > 0 ? (
+    <BarChart
+      data={barChartData}
+      width={Dimensions.get('window').width - 72}
+      height={220}
+      yAxisLabel=""
+      yAxisSuffix=""
+      chartConfig={chartConfig}
+      verticalLabelRotation={30}
+      fromZero
+      showBarTops={false}
+    />
+  ) : (
+    <View style={styles.noDataContainer}>
+      <Text style={styles.noDataText}>No hay datos mensuales</Text>
+    </View>
+  )}
+</View>
       </View>
 
       {/* Additional Stats */}

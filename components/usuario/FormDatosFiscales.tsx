@@ -19,6 +19,7 @@ import {
 import { Checkbox } from 'react-native-paper';
 import { useSession } from '../../hooks/useSession';
 
+
 // ========== INTERFACES ==========
 interface DomicilioFiscal {
   calle?: string;
@@ -92,10 +93,10 @@ interface SelectedUsoCFDI {
 }
 
 // ========== COMPONENTE DE ÉXITO ==========
-function SuccessStep({ 
+function SuccessStep({
   onResetData,
-  onBack 
-}: { 
+  onBack
+}: {
   onResetData?: () => void;
   onBack?: () => void;
 }) {
@@ -123,52 +124,57 @@ function SuccessStep({
       );
     }
     router.push('/metodoRegistroFiscal');
-            
+
   };
+
+  const handlerDash = () => {
+     router.push('/dashboard');
+  }
 
   return (
     <View style={successStyles.container}>
       <View style={styles.card}>
-           <View style={successStyles.content}>
-        <View style={successStyles.iconContainer}>
-          <CheckCircle size={64} color="#10B981" />
-        </View>
+        <View style={successStyles.content}>
+          <View style={successStyles.iconContainer}>
+            <CheckCircle size={64} color="#10B981" />
+          </View>
 
-        <Text style={successStyles.successTitle}>
-          Receptor registrado exitosamente
-        </Text>
-        <Text style={successStyles.successMessage}>
-          El receptor ha sido registrado correctamente en el sistema.
-        </Text>
+          <Text style={successStyles.successTitle}>
+            Receptor registrado exitosamente
+          </Text>
+          <Text style={successStyles.successMessage}>
+            El receptor ha sido registrado correctamente en el sistema.
+          </Text>
 
-        <View style={successStyles.buttonsContainer}>
-          <TouchableOpacity
-            style={[successStyles.button, successStyles.outlineButton]}
-            //onPress={() => router.push('/dashboard')}
-          >
-            <Text style={successStyles.outlineButtonText}>Ir al Dashboard</Text>
-          </TouchableOpacity>
+          <View style={successStyles.buttonsContainer}>
+            <TouchableOpacity
+              style={[successStyles.button, successStyles.outlineButton]}
+              onPress={handlerDash}
 
-          <TouchableOpacity
-            style={[successStyles.button, successStyles.outlineButton]}
+            >
+              <Text style={successStyles.outlineButtonText}>Ir al Dashboard</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[successStyles.button, successStyles.outlineButton]}
             // onPress={() => router.push({
             //   pathname: '/dashboard',
             //   params: { section: 'receptores' }
             // })}
-          >
-            <Text style={successStyles.outlineButtonText}>Gestionar receptores</Text>
-          </TouchableOpacity>
+            >
+              <Text style={successStyles.outlineButtonText}>Gestionar receptores</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[successStyles.button, successStyles.primaryButton]}
-            onPress={handleResetData}
-          >
-            <Text style={successStyles.primaryButtonText}>Registrar otro receptor</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[successStyles.button, successStyles.primaryButton]}
+              onPress={handleResetData}
+            >
+              <Text style={successStyles.primaryButtonText}>Registrar otro receptor</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-      </View>
-     
+
     </View>
   );
 }
@@ -297,19 +303,19 @@ export default function FormDatosFiscalesCompleto() {
         try {
           setLoadingCSF(true);
           const fiscalData = JSON.parse(params.fiscalData as string);
-          
+
           // Verificar que los datos tengan la estructura esperada
           if (!fiscalData || (!fiscalData.data && !fiscalData.rfc)) {
             throw new Error('Datos del CSF incompletos o inválidos');
           }
-          
+
           await autoFillFormData(fiscalData);
           setAutoLoaded(true);
-          
+
         } catch (error) {
           console.error("Error al cargar datos CSF:", error);
           Alert.alert(
-            "Error al cargar datos", 
+            "Error al cargar datos",
             "No se pudieron cargar los datos del archivo CSF. Por favor, ingresa los datos manualmente.",
             [{ text: 'Entendido' }]
           );
@@ -329,10 +335,10 @@ export default function FormDatosFiscalesCompleto() {
 
   // ========== FUNCIÓN PARA AUTOLLENAR FORMULARIO DESDE ARCHIVO ==========
   const autoFillFormData = (apiData: any) => {
-  
+
     // La estructura puede variar, así que manejemos diferentes casos
     const data = apiData.data || apiData;
-    
+
     setThirdPartyData({
       es_persona_moral: data.es_persona_moral || false,
       nombre_razon: data.nombre_razon || data.razonSocial || '',
@@ -371,10 +377,10 @@ export default function FormDatosFiscalesCompleto() {
       }));
       setSelectedRegimens(selectedRegimens);
     }
-    
+
     //Mostrar mensaje con los datos reales del CSF
     Alert.alert(
-      'Datos del CSF cargados', 
+      'Datos del CSF cargados',
       `Se han cargado los datos fiscales de:\n\nRFC: ${data.rfc || 'N/A'}\nNombre: ${data.nombre_razon || data.razonSocial || 'N/A'}`,
       [{ text: 'Continuar' }]
     );
@@ -935,9 +941,9 @@ export default function FormDatosFiscalesCompleto() {
         </View>
 
         <Text style={styles.headerTitle}>
-          {currentStep === 'datos' ? 'Datos Fiscales del Tercero' : 
-           currentStep === 'regimenes' ? 'Regímenes Fiscales' : 
-           'Registro Exitoso'}
+          {currentStep === 'datos' ? 'Datos Fiscales del Tercero' :
+            currentStep === 'regimenes' ? 'Regímenes Fiscales' :
+              'Registro Exitoso'}
         </Text>
 
         {/* Mostrar loading mientras se procesa el CSF */}
@@ -953,19 +959,19 @@ export default function FormDatosFiscalesCompleto() {
         {/* STEP 1: DATOS FISCALES */}
         {currentStep === 'datos' && (
           <>
-            {/* ✅ Sección informativa de datos cargados desde CSF */}
+            {/* Sección informativa de datos cargados desde CSF */}
             {autoLoaded && (
               <View style={styles.card}>
                 <View style={styles.sectionHeader}>
                   <FileText size={20} color="#10B981" />
                   <Text style={styles.sectionTitle}>Datos del Archivo CSF</Text>
                 </View>
-                
+
                 <Text style={styles.uploadDescription}>
-                  Los datos se han cargado automáticamente desde el archivo CSF procesado. 
+                  Los datos se han cargado automáticamente desde el archivo CSF procesado.
                   Revisa y completa la información si es necesario.
                 </Text>
-                
+
                 <View style={styles.infoContainer}>
                   <Text style={styles.infoText}>
                     <Text style={styles.infoLabel}>RFC: </Text>
@@ -1318,7 +1324,7 @@ export default function FormDatosFiscalesCompleto() {
 
         {/* STEP 3: ÉXITO */}
         {currentStep === 'exito' && (
-          <SuccessStep 
+          <SuccessStep
             onResetData={resetFormData}
             onBack={() => setCurrentStep('regimenes')}
           />
