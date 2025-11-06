@@ -1,20 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { ACTIVAR_PLAN, GET_ALL_PLANES } from '@/app/services/apiConstans';
+import requests from '@/app/services/requests';
+import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
     Text,
     TouchableOpacity,
-    ScrollView,
-    ActivityIndicator,
-    SafeAreaView,
-    StyleSheet,
-    Dimensions,
-    Alert,
-    Image
+    View
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import PlanCard from './PlanCard';
-import requests from '@/app/services/requests';
-import { ACTIVAR_PLAN, GET_ALL_PLANES } from '@/app/services/apiConstans';
 
 // Interfaces
 interface PlanFeature { label: string; value: string; }
@@ -30,6 +31,7 @@ interface PlanFromAPI {
     created_at: string;
     updated_at: string;
     precio: string;
+    precios_vigentes: PrecioVigente[];
 }
 interface ApiResponse {
     success: boolean;
@@ -38,9 +40,19 @@ interface ApiResponse {
     message: string;
 }
 
-interface RegistroPricingProps {
-    onBack: () => void;
+interface PrecioVigente {
+    id: number;
+    nombre_precio: string;
+    id_plan: number;
+    precio: string;
+    desde_factura: number;
+    hasta_factura: number;
+    vigencia_desde: string;
+    vigencia_hasta: string | null;
+    created_at: string | null;
+    updated_at: string | null;
 }
+
 
 // Funciones auxiliares
 const getPlanFeatures = (plan: PlanFromAPI): PlanFeature[] => [
@@ -76,7 +88,7 @@ const ActivarPlan = async (planId: string): Promise<ApiResponse> => {
 };
 
 // Componente Pricing
-const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
+const Pricing: React.FC = () => {
     const [plans, setPlans] = useState<PlanFromAPI[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -160,6 +172,10 @@ const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
         }
     };
 
+    const handleBackToLogin = () => {
+    router.push("/login");
+  };
+
     const filteredPlans = plans.filter(plan => plan.tipo_plan === mode);
 
     if (loading) return (
@@ -183,7 +199,9 @@ const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Botón volver */}
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                <TouchableOpacity 
+                onPress={handleBackToLogin} 
+                style={styles.backButton}>
                     <Text style={styles.backButtonText}>← Volver a Login</Text>
                 </TouchableOpacity>
                 <View style={[styles.card, styles.transparentCard]}>
@@ -245,6 +263,7 @@ const Pricing: React.FC<RegistroPricingProps> = ({ onBack }) => {
                                         features={getPlanFeatures(plan)}
                                         featured={isSelected}
                                         onSelect={() => handleButtonClick(plan.id.toString(), plan.nombre_plan)}
+                                        precios_vigentes={plan.precios_vigentes || []}
                                     />
                                 </View>
                             );

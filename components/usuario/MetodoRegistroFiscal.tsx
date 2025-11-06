@@ -1,20 +1,52 @@
-import React from 'react';
+import { router } from 'expo-router';
+import { CloudUpload, FilePen } from 'lucide-react-native';
+import { useState } from 'react';
 import {
-    View,
+    Image,
+    ScrollView,
+    StyleSheet,
     Text,
     TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    Image
+    View
 } from 'react-native';
-import { CloudUpload, FilePen } from 'lucide-react-native';
 
 interface Props {
-    onMethodSelect: (method: 'cfdi' | 'constancia' | 'manual') => void;
-    onCancel: () => void;
+    onMethodSelect?: (method: 'cfdi' | 'constancia' | 'manual') => void;
+    onCancel?: () => void;
 }
 
-export default function FiscalRegistrationMethod({ onMethodSelect, onCancel }: Props) {
+export default function FiscalRegistrationMethod({  
+    onMethodSelect = () => {},
+    onCancel = () => {},
+}: Props) {
+
+    const [loading, setLoading] = useState(false);
+
+    const handleMethodSelect = (method: 'cfdi' | 'constancia' | 'manual') => {
+    setLoading(true);
+    console.log('Método seleccionado:', method);
+    
+    switch (method) {
+      case 'constancia':
+        router.push('/fileUpload');
+        break;
+      case 'manual':
+        router.push('/FormDatosFiscalesScreen'); 
+        break;
+      default:
+        break;
+    }
+    
+    setLoading(false);
+  };
+
+    
+
+  const handleCancel = () => {
+    router.back();
+  };
+
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <View style={[styles.card, styles.transparentCard]}>
@@ -38,7 +70,7 @@ export default function FiscalRegistrationMethod({ onMethodSelect, onCancel }: P
                         {/* Opción Constancia Fiscal */}
                         <TouchableOpacity
                             style={styles.optionButton}
-                            onPress={() => onMethodSelect('constancia')}
+                            onPress={() => handleMethodSelect('constancia')}
                         >
                             <CloudUpload size={24} color="#6b7280" />
                             <View style={styles.optionTextContainer}>
@@ -50,7 +82,7 @@ export default function FiscalRegistrationMethod({ onMethodSelect, onCancel }: P
                         {/* Opción Manual */}
                         <TouchableOpacity
                             style={styles.optionButton}
-                            onPress={() => onMethodSelect('manual')}
+                            onPress={() => handleMethodSelect('manual')}
                         >
                             <FilePen size={24} color="#6b7280" />
                             <View style={styles.optionTextContainer}>
@@ -63,7 +95,7 @@ export default function FiscalRegistrationMethod({ onMethodSelect, onCancel }: P
                     <View style={styles.buttonsContainer}>
                         <TouchableOpacity
                             style={[styles.button, styles.cancelButton]}
-                            onPress={onCancel}
+                            onPress={handleCancel}
                         >
                             <Text style={styles.cancelButtonText}>Cancelar</Text>
                         </TouchableOpacity>

@@ -4,21 +4,7 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 export default function ForgotPasswordScreen() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
 
-  const handleBack = () => {
-    // Navegar hacia atrás - podría ser al login
-    router.back();
-    // o específicamente a:
-    // router.push("/login");
-  };
-
-  const handleSubmitSuccess = () => {
-    // Cuando se completa exitosamente el cambio de contraseña
-    // Podrías redirigir al login o mostrar un mensaje
-    router.push("/login");
-  };
 
   return (
     <View style={styles.container}>
@@ -28,10 +14,7 @@ export default function ForgotPasswordScreen() {
           headerShown: false 
         }} 
       />
-      <ForgotPasswordForm
-        onBack={handleBack}
-        //loading={loading}
-      />
+      <ForgotPasswordForm/>
     </View>
   );
 }

@@ -1,27 +1,8 @@
 import InfoForm from "@/components/usuario/modalDatos";
-import { Stack, useRouter } from "expo-router";
-import { useState } from "react";
+import { Stack } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
 export default function DatosAlertScreen() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    try {
-      //router.push("/DatosPersonales");
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLater = () => {
-    router.push("/login");
-  };
-
   return (
     <View style={styles.container}>
       <Stack.Screen 
@@ -30,11 +11,7 @@ export default function DatosAlertScreen() {
           headerShown: false 
         }} 
       />
-      <InfoForm 
-        onSubmit={handleSubmit}
-        //onLater={handleLater}
-        loading={loading}
-      />
+      <InfoForm />
     </View>
   );
 }

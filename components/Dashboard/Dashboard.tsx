@@ -1,28 +1,30 @@
 import { useNavigation } from "expo-router";
 import { useState } from "react";
 import {
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 //import { useUserContenido } from "@/hooks/UserConteProvider";
 import {
-    BadgeDollarSign,
-    BarChart3,
-    CreditCard,
-    FileText,
-    Menu,
-    TrendingUp,
-    UserCircle
+  BadgeDollarSign,
+  BarChart3,
+  CreditCard,
+  FileText,
+  Menu,
+  TrendingUp,
+  UserCircle
 } from "lucide-react-native";
 
 // Importar el DashboardTab adaptado
 import { router } from 'expo-router';
 import { useSession } from '../../hooks/useSession';
 import { DashboardTab } from "./DashboardTab";
+import FileUpload from "./FileUpload";
+import TicketsTable from "./TableTickets";
 
 interface DashboardProps {
   onBack?: () => void;
@@ -35,7 +37,6 @@ export default function Dashboard({ onBack }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const { session, loading: sessionLoading } = useSession(); 
   
-
   const [currentDate] = useState(new Date().toLocaleDateString('es-MX', {
     weekday: 'long',
     year: 'numeric',
@@ -45,22 +46,25 @@ export default function Dashboard({ onBack }: DashboardProps) {
 
   const handleLogout = () => {
     router.push('/login')
-    if (onBack) {
-      onBack();
-    } else {
-      navigation.goBack();
-    }
   };
 
-   // Validar que session existe antes de usarlo
+  // Validar que session existe antes de usarlo
   const userName = session?.NombreSST || 'Usuario';
   const userBalance = session?.SaldoSST || "0.00";
   const userRole = session?.RolSST || 'Usuario';
   const userEmail = session?.CorreoSST || '';
   const userRoleId = session?.IdRolSST || '';
+  const userId = session?.IdUsuarioSST || 0; // 👈 Obtener el ID del usuario
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+  };
+
+  // 👇 Función para manejar cuando los archivos se suben exitosamente
+  const handleFilesUploaded = (files: any[]) => {
+    console.log('Archivos subidos exitosamente:', files);
+    // Aquí puedes actualizar el estado, mostrar un mensaje, etc.
+    // Por ejemplo, podrías recargar la tabla de tickets
   };
 
   const Header = () => (
@@ -142,15 +146,16 @@ export default function Dashboard({ onBack }: DashboardProps) {
       case "dashboard":
         return <DashboardTab />;
       case "tickets":
-        return (
-          <View style={styles.tabContent}>
-            <Text style={styles.comingSoon}>Tickets - Próximamente</Text>
-          </View>
-        );
+        return <TicketsTable />;
       case "carga":
         return (
-          <View style={styles.tabContent}>
-            <Text style={styles.comingSoon}>Carga - Próximamente</Text>
+          <View style={styles.fileUploadContainer}>
+            <FileUpload
+              userId={userId} // 👈 Pasar el ID del usuario
+              onFilesUploaded={handleFilesUploaded} // 👈 Pasar la función callback
+              acceptedTypes={[".jpg", ".jpeg", ".png", ".gif", ".pdf"]} // 👈 Tipos aceptados (opcional)
+              maxFileSize={10} // 👈 Tamaño máximo en MB (opcional)
+            />
           </View>
         );
       default:
@@ -188,7 +193,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.sidebarItem}
+                style={[styles.sidebarItem, activeTab === "tickets" && styles.activeSidebarItem]}
                 onPress={() => {
                   handleTabChange("tickets");
                   setSidebarVisible(false);
@@ -199,7 +204,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.sidebarItem}
+                style={[styles.sidebarItem, activeTab === "carga" && styles.activeSidebarItem]}
                 onPress={() => {
                   handleTabChange("carga");
                   setSidebarVisible(false);
@@ -364,6 +369,10 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingBottom: 20,
+  },
+  fileUploadContainer: {
+    flex: 1,
+    padding: 16,
   },
   tabContent: {
     flex: 1,

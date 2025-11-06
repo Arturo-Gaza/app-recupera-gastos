@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 interface InfoFormProps {
-    onSubmit: () => void;
+    onSubmit?: () => void;
     onLater?: () => void;
     loading?: boolean;
 }
@@ -18,7 +18,7 @@ const InfoForm: React.FC<InfoFormProps> = ({ onSubmit, onLater, loading = false 
     const router = useRouter();
 
     const handleInfoSubmit = () => {
-        onSubmit();
+        onSubmit?.();
          router.push('/DatosPersonales'); 
     };
 

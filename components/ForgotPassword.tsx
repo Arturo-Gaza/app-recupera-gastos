@@ -1,23 +1,24 @@
 import requests from '@/app/services/requests';
+import { router } from 'expo-router';
 import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { CAMBIO_PASSWORD, RECUPERAPASS_CORREO, VALIDA_CODIGO } from '../app/services/apiConstans';
 
 interface ForgotPasswordFormProps {
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 type Step = 'method' | 'email' | 'otp' | 'password';
@@ -94,6 +95,10 @@ const PasswordInput = ({ value, onChange, placeholder, showValidation = false }:
       </Text>
     </View>
   );
+
+    const handleBack = () => {
+    router.back();
+  };
 
   return (
     <View>
@@ -302,7 +307,7 @@ const toast = ({ title, description }: any) => {
   Alert.alert(title, description);
 };
 
-export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
+export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProps) {
   const [currentStep, setCurrentStep] = useState<Step>('method');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -496,12 +501,12 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
         setCurrentStep('otp');
         break;
       default:
-        onBack();
+        router.back();
     }
   };
 
   const handleLogout = () => {
-    onBack();
+   router.back();
   };
 
   // ----- Renders -----
@@ -686,7 +691,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Card style={styles.card}>
           <View style={styles.header}>
-            <Button variant="ghost" onPress={handleBack} style={styles.backButton}>
+            <Button variant="ghost" onPress={handleLogout} style={styles.backButton}>
               <ArrowLeftIcon />
             </Button>
             <Text style={styles.title}>{getStepTitle()}</Text>

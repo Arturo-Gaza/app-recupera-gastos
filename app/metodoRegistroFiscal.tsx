@@ -4,31 +4,6 @@ import FiscalRegistrationMethod from '../components/usuario/MetodoRegistroFiscal
 import { Stack, useRouter } from "expo-router";
 
 export default function PlanesScreen() {
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const handleMethodSelect = (method: 'cfdi' | 'constancia' | 'manual') => {
-    setLoading(true);
-    console.log('Método seleccionado:', method);
-    
-    switch (method) {
-      case 'constancia':
-        router.push('/fileUpload');
-        break;
-      case 'manual':
-        router.push('/FormDatosFiscalesScreen'); 
-        break;
-      default:
-        break;
-    }
-    
-    setLoading(false);
-  };
-
-  const handleCancel = () => {
-    router.back();
-    console.log('Cancelar presionado');
-  };
 
   return (
     <View style={styles.container}>
@@ -38,10 +13,7 @@ export default function PlanesScreen() {
           headerShown: false 
         }} 
       />
-      <FiscalRegistrationMethod
-        onMethodSelect={handleMethodSelect}
-        onCancel={handleCancel}
-      />
+      <FiscalRegistrationMethod />
     </View>
   );
 }

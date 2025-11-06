@@ -17,10 +17,10 @@ import {
 } from "react-native";
 
 interface FileUploadProps {
-  onFilesUploaded: (data: any) => void;
+ onFilesUploaded?: (data: any) => void;
   acceptedTypes?: string[];
   maxFileSize?: number;
-  uploadType: "cfdi" | "constancia";
+  uploadType?: "cfdi" | "constancia";
   redirectTo?: string;
 }
 
@@ -129,9 +129,9 @@ const FileUpload = ({
             formData.append("archivo", fileObj);
 
             // Depuración opcional
-            for (const [key, value] of formData.entries()) {
-              console.log("FormData:", key, value);
-            }
+            // for (const [key, value] of formData.entries()) {
+            //   console.log("FormData:", key, value);
+            // }
 
             const response = await requests.post({
               command: CARGAR_CSF,
@@ -171,7 +171,8 @@ const FileUpload = ({
         );
 
         if (allResults.length > 0) {
-  onFilesUploaded(allResults);
+  onFilesUploaded?.(allResults);
+
 
 
   //Extraer el primer resultado (tu backend devuelve solo uno normalmente)
