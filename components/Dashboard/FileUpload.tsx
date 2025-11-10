@@ -149,7 +149,7 @@ const FileUpload = ({
     [userId, normalizedAccepted, maxFileSize, onFilesUploaded]
   );
 
-  // 📸 Tomar foto con cámara
+  // Tomar foto con cámara
   const takePhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
@@ -174,7 +174,7 @@ const FileUpload = ({
     }
   }, [handleFiles]);
 
-  // 🖼️ Seleccionar desde galería
+  //Seleccionar desde galería
   const selectFromGallery = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {

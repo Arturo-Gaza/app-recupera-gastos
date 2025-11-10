@@ -54,7 +54,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
   const userRole = session?.RolSST || 'Usuario';
   const userEmail = session?.CorreoSST || '';
   const userRoleId = session?.IdRolSST || '';
-  const userId = session?.IdUsuarioSST || 0; // 👈 Obtener el ID del usuario
+  const userId = session?.IdUsuarioSST || 0; 
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -151,10 +151,10 @@ export default function Dashboard({ onBack }: DashboardProps) {
         return (
           <View style={styles.fileUploadContainer}>
             <FileUpload
-              userId={userId} // 👈 Pasar el ID del usuario
-              onFilesUploaded={handleFilesUploaded} // 👈 Pasar la función callback
-              acceptedTypes={[".jpg", ".jpeg", ".png", ".gif", ".pdf"]} // 👈 Tipos aceptados (opcional)
-              maxFileSize={10} // 👈 Tamaño máximo en MB (opcional)
+              userId={userId} 
+              onFilesUploaded={handleFilesUploaded}
+              acceptedTypes={[".jpg", ".jpeg", ".png", ".gif", ".pdf"]} 
+              maxFileSize={10} 
             />
           </View>
         );

@@ -1,5 +1,6 @@
 import { ACTUALIZAR_RECEPTOR, PROCESAR_TICKET, RECEPTORES_BYUSER, USUARIO_GETBY_ID } from "@/app/services/apiConstans";
 import requests from "@/app/services/requests";
+import { useSession } from "@/hooks/useSession";
 import { ChevronDown, Download, Eye, Send, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
@@ -16,6 +17,7 @@ import {
     View,
 } from "react-native";
 import TicketModal from "./Modales/ModalTicket";
+
 
 // Interface basada en tu respuesta real de API
 interface Ticket {
@@ -56,11 +58,15 @@ export const TicketsTable = () => {
     const [selectedValues, setSelectedValues] = useState<{ [ticketId: string]: string }>({});
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [expandedSelectors, setExpandedSelectors] = useState<{ [ticketId: string]: boolean }>({});
+    const { session, loading: sessionLoading } = useSession();
 
+    const userId = session?.IdUsuarioSST || 0;
+    //console.log("el id del usuario es este", userId)
     const fetchTickets = async () => {
+        
         try {
             setLoading(true);
-            const response = await requests.get({ command: USUARIO_GETBY_ID + 4 });
+            const response = await requests.get({ command: USUARIO_GETBY_ID + userId });
 
             const ticketsData = response.data?.data || [];
 
@@ -77,7 +83,7 @@ export const TicketsTable = () => {
                 imagen_url: ticket.imagen_url,
                 created_at: ticket.created_at,
                 usoCFDI: ticket.usoCFDI,
-                id_receptor: ticket.id_receptor // Usando id_receptor de la API
+                id_receptor: ticket.id_receptor
             }));
 
             setTickets(mappedTickets);
@@ -96,7 +102,7 @@ export const TicketsTable = () => {
         try {
             // Reemplaza RECEPTORES_BYUSER con tu endpoint real
             const response = await requests.get({ 
-                command: RECEPTORES_BYUSER + 4 // o el userId correspondiente
+                command: RECEPTORES_BYUSER + userId // o el userId correspondiente
             });
 
             const data = response?.data?.data;
@@ -217,9 +223,11 @@ export const TicketsTable = () => {
         setRefreshing(false);
     };
 
-    useEffect(() => {
-        fetchTickets();
-    }, []);
+useEffect(() => {
+  if (session?.IdUsuarioSST) {
+    fetchTickets();
+  }
+}, [session]);
 
     // Cargar receptores cuando los tickets estén listos
     useEffect(() => {
@@ -519,6 +527,7 @@ export const TicketsTable = () => {
                 renderItem={renderTicketItem}
                 keyExtractor={(item) => item.id}
                 showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
