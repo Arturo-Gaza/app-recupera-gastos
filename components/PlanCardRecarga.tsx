@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Check } from 'lucide-react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface PlanFeature {
     label: string;
@@ -42,11 +41,11 @@ const PlanCardRecarga: React.FC<PlanCardRecargaProps> = ({
             </View>
 
             {/* Descripción */}
-            <View style={styles.descriptionContainer}>
+            {/* <View style={styles.descriptionContainer}>
                 <Text style={styles.description}>
                     Recarga prepago flexible para uso personal
                 </Text>
-            </View>
+            </View> */}
 
             {/* Características */}
            

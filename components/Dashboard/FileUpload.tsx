@@ -1,17 +1,19 @@
 import { SOLICITUD_CREATE } from '@/app/services/apiConstans';
 import requests from '@/app/services/requests';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useState } from 'react';
+
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface FileUploadProps {
@@ -165,14 +167,34 @@ const FileUpload = ({
       });
 
       if (!result.canceled && result.assets.length > 0) {
-        const photo = result.assets[0];
-        handleFiles([photo]);
+        let photo = result.assets[0];
+
+        //Comprimir la imagen (por ejemplo a 60% de calidad y 800px de ancho máximo)
+        const compressed = await ImageManipulator.manipulateAsync(
+          photo.uri,
+          [{ resize: { width: 800 } }], 
+          {
+            compress: 0.5, // calidad 
+            format: ImageManipulator.SaveFormat.JPEG,
+          }
+        );
+
+        //Actualiza la referencia a la imagen comprimida
+        const compressedPhoto = {
+          ...photo,
+          uri: compressed.uri,
+          fileName: `photo_${Date.now()}.jpg`,
+          mimeType: 'image/jpeg',
+        };
+
+        handleFiles([compressedPhoto]);
       }
     } catch (error) {
       console.log('Error al tomar foto:', error);
       Alert.alert('Error', 'No se pudo tomar la foto');
     }
   }, [handleFiles]);
+
 
   //Seleccionar desde galería
   const selectFromGallery = useCallback(async () => {

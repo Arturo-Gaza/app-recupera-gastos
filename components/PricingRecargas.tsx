@@ -1,23 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useEffect, useRef, useState } from 'react';
 import {
-    View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
     Text,
     TouchableOpacity,
-    ScrollView,
-    ActivityIndicator,
-    SafeAreaView,
-    StyleSheet,
-    Dimensions,
-    Alert,
-    Image
+    View
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 //import PlanCardRecarga from './PlanCardRecarga';
+import { GET_BY_ID_BASICOS } from '@/app/services/apiConstans';
 import requests from '@/app/services/requests';
-import { GET_BY_BASICOS } from '@/app/services/apiConstans';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import PlanCardRecarga from './PlanCardRecarga';
-import { router, useRouter } from 'expo-router';
+import { useSession } from '@/hooks/useSession';
 
 // Interfaces
 interface PlanFeature {
@@ -42,20 +43,7 @@ interface ApiResponse {
     message: string;
 }
 
-// Funciones de API
-const GetAllPlanesBasicos = async (): Promise<ApiResponse> => {
-    try {
-        const response = await requests.get({ command: GET_BY_BASICOS });
-        return response.data;
-    } catch (err) {
-        return { success: false, data: [], data2: null, message: 'Error al obtener planes básicos' };
-    }
-};
 
-
-const getPlanFeatures = (plan: PlanFromAPI): PlanFeature[] => {
-    return [];
-};
 
 // Componente principal
 const RecargasPersonales = () => {
@@ -68,6 +56,23 @@ const RecargasPersonales = () => {
     const navigation = useNavigation();
     const { width: screenWidth } = Dimensions.get('window');
     const cardWidth = screenWidth * 0.8 + 20;
+    const { planId } = useLocalSearchParams();
+    const { session, loading: sessionLoading } = useSession(); 
+
+    // Funciones de API
+    const GetAllPlanesBasicos = async (): Promise<ApiResponse> => {
+        try {
+            const response = await requests.get({ command: GET_BY_ID_BASICOS + planId });
+            return response.data;
+        } catch (err) {
+            return { success: false, data: [], data2: null, message: 'Error al obtener planes básicos' };
+        }
+    };
+
+
+    const getPlanFeatures = (plan: PlanFromAPI): PlanFeature[] => {
+        return [];
+    };
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -117,9 +122,16 @@ const RecargasPersonales = () => {
             Alert.alert("Error", "No se pudo procesar la selección del plan");
         }
     };
+    const datosCompletos = session?.DatosCompletosSST;
+    console.log("la sesion es ", datosCompletos)
 
-     const handleOmitir = () => {
-        router.push('/datosAlert'); 
+    const handleOmitir = () => {
+        if(datosCompletos !== true){
+            router.push('/datosAlert');
+        }else{
+            router.push('/dashboard');
+        }
+        
     };
 
     const handleActivarPlan = async (planId: string) => {
@@ -278,7 +290,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
 
-     headerButtons: {
+    headerButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -412,7 +424,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 8,
     },
-     //Estilo para el logo
+    //Estilo para el logo
     transparentCard: {
         backgroundColor: 'transparent',
         shadowOpacity: 0,
@@ -444,7 +456,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 5,
     },
-     omitButton: {
+    omitButton: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,

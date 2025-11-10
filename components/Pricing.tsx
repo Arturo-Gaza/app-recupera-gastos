@@ -22,9 +22,10 @@ interface PlanFeature { label: string; value: string; }
 interface PlanFromAPI {
     id: number;
     nombre_plan: string;
+    descripcion_plan: string;
     tipo_plan: "personal" | "empresarial";
     tipo_pago: "prepago" | "postpago";
-    num_usuarios: number | null;
+    num_usuarios: string | null;
     num_facturas: number | null;
     vigencia_inicio: string;
     vigencia_fin: string | null;
@@ -58,18 +59,11 @@ interface PrecioVigente {
 const getPlanFeatures = (plan: PlanFromAPI): PlanFeature[] => [
     { label: "Uso de App y Web", value: "✓" },
     { label: "Tipo de Pago", value: plan.tipo_pago === "prepago" ? "Prepago" : "Mensual" },
-    { label: "10 operaciones gratuitas si eres usuario nuevo", value: "✓" },
+    { label: "Número de usuarios", value: Number(plan.num_usuarios) === 0 ? "Ilimitado" : plan.num_usuarios || "" },
 ];
 
-const getPlanDescription = (plan: PlanFromAPI): string => {
-    const descriptions: { [key: number]: string } = {
-        1: "Selecciona este plan para ver las opciones de recarga disponibles",
-        2: "Recupera la mayoría de los gastos",
-        3: "Ideal para pequeñas empresas",
-        4: "Para empresas en crecimiento",
-        5: "Máxima capacidad y soporte",
-    };
-    return descriptions[plan.id] || "Plan personalizado para tus necesidades";
+const getPlanDescription = (plan: PlanFromAPI): string => { 
+    return plan.descripcion_plan;
 };
 
 // Funciones de API (mock para desarrollo)
@@ -161,12 +155,20 @@ const Pricing: React.FC = () => {
             setLoading(false);
         }
     }
-
+//funcion que manda a pantalla de recargas
     const handleButtonClick = async (planId: string, planName: string) => {
         setSelectedPlan(planId);
-        await handleActivarPlan(planId);
-        if (planName.toLowerCase().includes("personal")) {
+        if(planId === "1" || planId === "2" || planId === "3"){
+            router.push({
+            pathname: "/Recargas",
+            params: {planId}
+        });
+        }
+        //await handleActivarPlan(planId);
+        if (planName.toLowerCase().includes("prepago")) {
+            console.log("que trae planName", planName)
             navigation.navigate('Recargas' as never);
+             
         } else {
             //navigation.navigate('ResumenPago' as never, { planId } as never);
         }
