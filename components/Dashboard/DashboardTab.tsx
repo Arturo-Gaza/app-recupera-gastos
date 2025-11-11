@@ -3,14 +3,16 @@ import requests from '@/app/services/requests';
 import { Calendar, FileText, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
-    Dimensions,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { BarChart, PieChart } from 'react-native-chart-kit';
+import { PieChart } from 'react-native-chart-kit';
+import { BarChart } from 'react-native-gifted-charts';
 
 const STATUS_COLORS: Record<number, string> = {
   1: '#60a5fa', // Cargado - blue-400
@@ -24,7 +26,7 @@ const STATUS_COLORS: Record<number, string> = {
   9: '#059669', // Concluido - emerald-600
 };
 
-// Interfaces basadas en la estructura real de tu API
+// Interfaces (se mantienen igual)
 interface EstatusItem {
   estatus_id: number;
   descripcion_estatus_solicitud: string;
@@ -63,8 +65,6 @@ interface ApiResponse {
   message: string;
 }
 
-// Define tu command para la API
-
 export function DashboardTab() {
   const [apiData, setApiData] = useState<ApiDashboardData | null>(null);
   const [expandido, setExpandido] = useState(false);
@@ -73,24 +73,32 @@ export function DashboardTab() {
     fecha_fin: ''
   });
   const [loading, setLoading] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  // Función para fetch data de la API
+  // ✅ NUEVOS ESTADOS CORREGIDOS PARA BARRAS
+  const [verticalBarData, setVerticalBarData] = useState<any[]>([]);
+  const [maxBarValue, setMaxBarValue] = useState(10);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Reemplaza "requests.post" con tu cliente HTTP real
       const response = await requests.post({
         command: SOLICITUD_DASHBOARD,
         data: fechaData
       });
 
       const apiResponse: ApiResponse = response.data;
-      console.log('RESPUESTA COMPLETA DE API:', apiResponse);
 
       if (apiResponse.success && apiResponse.data) {
         setApiData(apiResponse.data);
+        
+        const years = apiResponse.data.data_mensual?.map(item => item.anio) || [];
+        setAvailableYears(years);
+        if (years.length > 0) {
+          setSelectedYear('all');
+        }
       } else {
-        console.log('No hay datos o la respuesta no fue exitosa');
         setApiData(null);
       }
     } catch (error) {
@@ -101,19 +109,44 @@ export function DashboardTab() {
     }
   };
 
-  // Efecto para cargar datos cuando cambian las fechas
   useEffect(() => {
     fetchData();
   }, [fechaData]);
 
-  // DEFINIR chartData BASADA EN LA ESTRUCTURA REAL
-  const chartData = apiData?.estadisticas_por_estatus.map(estatus => ({
-    name: estatus.descripcion_estatus_solicitud,
-    value: estatus.total_tickets,
-    color: STATUS_COLORS[estatus.estatus_id] || '#666666'
-  })) || [];
+  // USEEFFECT PARA ACTUALIZAR GRÁFICA DE BARRAS CUANDO CAMBIA apiData
+  useEffect(() => {
+    if (apiData?.estadisticas_por_estatus) {
+      const data = apiData.estadisticas_por_estatus
+        .filter(item => item.total_tickets > 0)
+        .map(item => ({
+          value: item.total_tickets,
+          label: item.descripcion_estatus_solicitud,
+          frontColor: STATUS_COLORS[item.estatus_id] || '#9ca3af',
+        }));
 
-  // PREPARAR DATOS PARA GRÁFICA PIE
+      const max = data.length
+        ? Math.ceil(Math.max(...data.map(d => d.value)) * 1.2)
+        : 10;
+
+      setVerticalBarData(data);
+      setMaxBarValue(max);
+
+      console.log("DATOS BARRAS ACTUALIZADOS:", { data, max });
+    } else {
+      setVerticalBarData([]);
+      setMaxBarValue(10);
+    }
+  }, [apiData]);
+
+  // Preparar datos para gráfica de pie
+  const chartData = apiData?.estadisticas_por_estatus
+    .filter(item => item.total_tickets > 0)
+    .map(item => ({
+      name: item.descripcion_estatus_solicitud,
+      value: item.total_tickets,
+      color: STATUS_COLORS[item.estatus_id] || '#9ca3af',
+    })) || [];
+
   const pieChartData = chartData.map((item) => ({
     name: item.name,
     population: item.value,
@@ -121,113 +154,6 @@ export function DashboardTab() {
     legendFontColor: '#7F7F7F',
     legendFontSize: 12,
   }));
-
-// PREPARAR DATOS PARA GRÁFICA DE BARRAS AGRUPADAS
-const prepareBarChartData = () => {
-  if (!apiData?.data_mensual) return { labels: [], datasets: [] };
-
-  const labels: string[] = [];
-  
-  // Recolectar todos los estatus únicos que aparecen en los datos
-  const allStatus: number[] = [];
-  apiData.data_mensual.forEach(yearData => {
-    yearData.meses.forEach(mesData => {
-      mesData.estatus.forEach(estatusItem => {
-        if (!allStatus.includes(estatusItem.estado_id)) {
-          allStatus.push(estatusItem.estado_id);
-        }
-      });
-    });
-  });
-
-  // Crear un dataset para cada estatus
-  const datasets = allStatus.map(estatusId => {
-    const data: number[] = [];
-    const estatusName = apiData.estadisticas_por_estatus.find(e => e.estatus_id === estatusId)?.descripcion_estatus_solicitud || `Estatus ${estatusId}`;
-    
-    apiData.data_mensual.forEach(yearData => {
-      yearData.meses.forEach(mesData => {
-        // Si es el primer estatus, agregar la etiqueta
-        if (estatusId === allStatus[0]) {
-          labels.push(`${mesData.mes} ${yearData.anio}`);
-        }
-        
-        // Encontrar el total para este estatus en este mes
-        const estatusMes = mesData.estatus.find(e => e.estado_id === estatusId);
-        data.push(estatusMes?.total || 0);
-      });
-    });
-
-    const baseColor = STATUS_COLORS[estatusId] || '#666666';
-    const r = parseInt(baseColor.slice(1, 3), 16);
-    const g = parseInt(baseColor.slice(3, 5), 16);
-    const b = parseInt(baseColor.slice(5, 7), 16);
-
-    return {
-      data,
-      color: (opacity = 1) => `rgba(${r}, ${g}, ${b}, ${opacity})`,
-      strokeWidth: 2,
-    };
-  });
-
-  return {
-    labels: labels.slice(0, apiData.data_mensual.reduce((sum, year) => sum + year.meses.length, 0)),
-    datasets,
-  };
-};
-
-const barChartData = prepareBarChartData();
-
-// CONFIGURACIÓN DE GRÁFICAS PARA BARRAS AGRUPADAS
-const chartConfig = {
-  backgroundColor: '#ffffff',
-  backgroundGradientFrom: '#ffffff',
-  backgroundGradientTo: '#ffffff',
-  decimalPlaces: 0,
-  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  style: {
-    borderRadius: 16,
-  },
-  propsForDots: {
-    r: '6',
-    strokeWidth: '2',
-    stroke: '#ffa726',
-  },
-  barPercentage: 0.7,
-  useShadowColorFromDataset: false,
-  propsForBackgroundLines: {
-    strokeWidth: 1,
-    stroke: '#e5e5e5',
-  },
-};
-
-
-  // CÁLCULOS DE ESTADÍSTICAS BASADOS EN LA ESTRUCTURA REAL
-  const totalTickets = apiData?.total_tickets || 0;
-  
-  // Calcular tickets por categoría según los estatus
-  const exitosos = apiData?.estadisticas_por_estatus.find(e => e.estatus_id === 9)?.total_tickets || 0;
-  const enProceso = apiData?.estadisticas_por_estatus
-    .filter(e => [2, 3, 4, 5].includes(e.estatus_id))
-    .reduce((sum, e) => sum + e.total_tickets, 0) || 0;
-  const fallidos = apiData?.estadisticas_por_estatus.find(e => e.estatus_id === 7)?.total_tickets || 0;
-  const pendientes = apiData?.estadisticas_por_estatus.find(e => e.estatus_id === 1)?.total_tickets || 0;
-
-  const successRate = totalTickets > 0 ? Math.round((exitosos / totalTickets) * 100) : 0;
-  const failureRate = totalTickets > 0 ? Math.round((fallidos / totalTickets) * 100) : 0;
-
-  // Handlers para fechas
-  const toggleExpandido = () => setExpandido(!expandido);
-
-  const handleFechaInicioChange = (text: string) => {
-    setFechaData(prev => ({ ...prev, fecha_inicio: text }));
-  };
-
-  const handleFechaFinChange = (text: string) => {
-    setFechaData(prev => ({ ...prev, fecha_fin: text }));
-  };
-
 
   const pieChartConfig = {
     backgroundColor: '#ffffff',
@@ -237,16 +163,53 @@ const chartConfig = {
     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
   };
 
+  // CÁLCULOS DE ESTADÍSTICAS
+  const totalTickets = apiData?.total_tickets || 0;
+  const estadisticas = apiData?.estadisticas_por_estatus || [];
+
+  const exitosos = estadisticas.find(s => s.estatus_id === 9)?.total_tickets || 0;
+  const enProceso = estadisticas.find(s => s.estatus_id === 2)?.total_tickets || 0;
+  const fallidos = estadisticas.find(s => s.estatus_id === 7)?.total_tickets || 0;
+  const pendientes = estadisticas.filter(s => [1, 3, 4].includes(s.estatus_id))
+    .reduce((sum, s) => sum + s.total_tickets, 0);
+
+  const ticketsCerrados = exitosos + fallidos + pendientes + enProceso;
+  const successRate = ticketsCerrados > 0 ? Math.round((exitosos / ticketsCerrados) * 100) : 0;
+  const failureRate = ticketsCerrados > 0 ? Math.round((fallidos / ticketsCerrados) * 100) : 0;
+
+  // Handlers para fechas
+  const toggleExpandido = () => {
+    setExpandido(!expandido);
+    if (expandido && fechaData.fecha_inicio !== "") {
+      setFechaData({ fecha_inicio: "", fecha_fin: "" });
+    }
+  };
+
+  const handleFechaInicioChange = (text: string) => {
+    setFechaData(prev => ({ ...prev, fecha_inicio: text }));
+  };
+
+  const handleFechaFinChange = (text: string) => {
+    setFechaData(prev => ({ ...prev, fecha_fin: text }));
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Cargando datos...</Text>
+        <Text style={styles.loadingText}>Cargando gráficas...</Text>
       </View>
     );
   }
 
+  const screenWidth = Dimensions.get('window').width;
+
+  console.log('DATOS BARRAS VERTICALES:', {
+    data: verticalBarData,
+    maxValue: maxBarValue
+  });
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Filtros de Fecha */}
       <View style={styles.filtersContainer}>
         <TouchableOpacity 
@@ -289,7 +252,7 @@ const chartConfig = {
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <View style={styles.statContent}>
-            <View>
+            <View style={styles.statTextContainer}>
               <Text style={styles.statLabel}>
                 Tickets totales {fechaData.fecha_inicio !== "" && fechaData.fecha_fin !== "" ? "" : "(Últimos 30 días)"}
               </Text>
@@ -302,7 +265,7 @@ const chartConfig = {
 
         <View style={styles.statCard}>
           <View style={styles.statContent}>
-            <View>
+            <View style={styles.statTextContainer}>
               <Text style={styles.statLabel}>% de éxito (auto+manual)</Text>
               <Text style={styles.statValue}>{successRate}%</Text>
               <Text style={styles.statDescription}>Sobre tickets cerrados</Text>
@@ -313,7 +276,7 @@ const chartConfig = {
 
         <View style={styles.statCard}>
           <View style={styles.statContent}>
-            <View>
+            <View style={styles.statTextContainer}>
               <Text style={styles.statLabel}>% de Fallidos</Text>
               <Text style={styles.statValue}>{failureRate}%</Text>
               <Text style={styles.statDescription}>Casos no resueltos manualmente</Text>
@@ -323,15 +286,15 @@ const chartConfig = {
         </View>
       </View>
 
-      {/* GRÁFICAS REALES */}
+      {/* Charts Section */}
       <View style={styles.chartsContainer}>
-        {/* Gráfica Pie - Distribución por estatus */}
+        {/* Gráfica Pie */}
         <View style={styles.chartCard}>
           <Text style={styles.chartTitle}>Distribución por estatus</Text>
           {pieChartData.length > 0 ? (
             <PieChart
               data={pieChartData}
-              width={Dimensions.get('window').width - 72}
+              width={screenWidth - 72}
               height={220}
               chartConfig={pieChartConfig}
               accessor="population"
@@ -346,29 +309,67 @@ const chartConfig = {
           )}
         </View>
 
-{/* Gráfica de Barras - Tendencia mensual */}
-<View style={styles.chartCard}>
-  <View style={styles.chartHeader}>
-    <Text style={styles.chartTitle}>Tendencia mensual</Text>
-  </View>
-  {barChartData.labels.length > 0 ? (
-    <BarChart
-      data={barChartData}
-      width={Dimensions.get('window').width - 72}
-      height={220}
-      yAxisLabel=""
-      yAxisSuffix=""
-      chartConfig={chartConfig}
-      verticalLabelRotation={30}
-      fromZero
-      showBarTops={false}
-    />
-  ) : (
-    <View style={styles.noDataContainer}>
-      <Text style={styles.noDataText}>No hay datos mensuales</Text>
-    </View>
-  )}
-</View>
+        {/* Gráfica de Barras */}
+        <View style={styles.chartCard}>
+          <View style={styles.chartHeader}>
+            <Text style={styles.chartTitle}>Distribución por estatus</Text>
+            <View style={styles.yearSelector}>
+              <Text style={styles.yearSelectorLabel}>Año:</Text>
+              <View style={styles.yearSelect}>
+                <Text style={styles.yearSelectText}>
+                  {selectedYear === 'all' ? 'Todos' : selectedYear}
+                </Text>
+              </View>
+            </View>
+          </View>
+          
+          {verticalBarData.length > 0 ? (
+            <View style={styles.barChartContainer}>
+              <BarChart
+                data={verticalBarData}
+                barWidth={40}
+                spacing={30}
+                initialSpacing={20}
+                endSpacing={20}
+                roundedTop={true}
+                roundedBottom={true}
+                hideRules={true}
+                xAxisThickness={1}
+                yAxisThickness={1}
+                xAxisColor="#e5e5e5"
+                yAxisColor="#e5e5e5"
+                noOfSections={4}
+                maxValue={maxBarValue}
+                height={220}
+                width={screenWidth - 72}
+                isAnimated={true}
+                showVerticalLines={false}
+                yAxisTextStyle={{ color: '#6b7280', fontSize: 10 }}
+                xAxisLabelTextStyle={{ color: '#6b7280', fontSize: 10, textAlign: 'center' }}
+                showValuesAsTopLabel={true}
+                topLabelTextStyle={{ color: '#1f2937', fontSize: 10, fontWeight: 'bold' }}
+                showFractionalValues={false}
+                showYAxisIndices={true}
+                yAxisIndicesColor="#e5e5e5"
+                yAxisIndicesWidth={1}
+                key={`vertical-barchart-${verticalBarData.length}`}
+              />
+              
+              <View style={styles.legendContainer}>
+                {verticalBarData.map((item, index) => (
+                  <View key={index} style={styles.legendItem}>
+                    <View style={[styles.legendColor, { backgroundColor: item.frontColor }]} />
+                    <Text style={styles.legendText}>{item.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View style={styles.noDataContainer}>
+              <Text style={styles.noDataText}>No hay datos para mostrar</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Additional Stats */}
@@ -379,8 +380,8 @@ const chartConfig = {
         </View>
 
         <View style={styles.miniStatCard}>
-          <Text style={[styles.miniStatValue, { color: '#eab308' }]}>{enProceso}</Text>
-          <Text style={styles.miniStatLabel}>En Proceso</Text>
+          <Text style={[styles.miniStatValue, { color: '#f59e0b' }]}>{enProceso}</Text>
+          <Text style={styles.miniStatLabel}>En Revision </Text>
         </View>
 
         <View style={styles.miniStatCard}>
@@ -389,11 +390,11 @@ const chartConfig = {
         </View>
 
         <View style={styles.miniStatCard}>
-          <Text style={[styles.miniStatValue, { color: '#06b6d4' }]}>{pendientes}</Text>
+          <Text style={[styles.miniStatValue, { color: '#60a5fa' }]}>{pendientes}</Text>
           <Text style={styles.miniStatLabel}>Pendientes</Text>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    gap: 24,
+    backgroundColor: '#f8fafc',
   },
   loadingContainer: {
     flex: 1,
@@ -416,6 +417,7 @@ const styles = StyleSheet.create({
   },
   filtersContainer: {
     gap: 12,
+    marginBottom: 16,
   },
   dateToggleButton: {
     flexDirection: 'row',
@@ -455,7 +457,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   statsGrid: {
-    gap: 12,
+    gap: 16,
+    marginBottom: 24,
   },
   statCard: {
     backgroundColor: '#fff',
@@ -465,30 +468,34 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 3,
   },
   statContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  statTextContainer: {
+    flex: 1,
+  },
   statLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#6b7280',
     marginBottom: 4,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#1f2937',
     marginBottom: 4,
   },
   statDescription: {
     fontSize: 12,
-    color: '#666',
+    color: '#9ca3af',
   },
   chartsContainer: {
-    gap: 16,
+    gap: 20,
+    marginBottom: 24,
   },
   chartCard: {
     backgroundColor: '#fff',
@@ -498,20 +505,73 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    elevation: 2,
-    alignItems: 'center',
+    elevation: 3,
   },
   chartHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-    width: '100%',
   },
   chartTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#1f2937',
+  },
+  yearSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  yearSelectorLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  yearSelect: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  yearSelectText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  barChartContainer: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    paddingVertical: 8,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 16,
+    gap: 12,
+    paddingHorizontal: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#f8fafc',
+    borderRadius: 6,
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '500',
   },
   noDataContainer: {
     height: 220,
@@ -522,7 +582,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e5e5',
     borderStyle: 'dashed',
-    width: Dimensions.get('window').width - 72,
   },
   noDataText: {
     fontSize: 16,
@@ -533,10 +592,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+    marginBottom: 24,
   },
   miniStatCard: {
     flex: 1,
-    minWidth: (Dimensions.get('window').width - 64) / 2,
+    minWidth: (Dimensions.get('window').width - 64) / 2 - 6,
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 16,
@@ -545,7 +605,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    elevation: 1,
+    elevation: 2,
   },
   miniStatValue: {
     fontSize: 20,
@@ -554,7 +614,7 @@ const styles = StyleSheet.create({
   },
   miniStatLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#6b7280',
     textAlign: 'center',
   },
 });

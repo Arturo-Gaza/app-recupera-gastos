@@ -62,7 +62,7 @@ const getPlanFeatures = (plan: PlanFromAPI): PlanFeature[] => [
     { label: "Número de usuarios", value: Number(plan.num_usuarios) === 0 ? "Ilimitado" : plan.num_usuarios || "" },
 ];
 
-const getPlanDescription = (plan: PlanFromAPI): string => { 
+const getPlanDescription = (plan: PlanFromAPI): string => {
     return plan.descripcion_plan;
 };
 
@@ -155,28 +155,28 @@ const Pricing: React.FC = () => {
             setLoading(false);
         }
     }
-//funcion que manda a pantalla de recargas
+    //funcion que manda a pantalla de recargas
     const handleButtonClick = async (planId: string, planName: string) => {
         setSelectedPlan(planId);
-        if(planId === "1" || planId === "2" || planId === "3"){
+        if (planId === "1" || planId === "2" || planId === "3") {
             router.push({
-            pathname: "/Recargas",
-            params: {planId}
-        });
+                pathname: "/Recargas",
+                params: { planId }
+            });
         }
-        //await handleActivarPlan(planId);
+        await handleActivarPlan(planId);
         if (planName.toLowerCase().includes("prepago")) {
             console.log("que trae planName", planName)
             navigation.navigate('Recargas' as never);
-             
+
         } else {
             //navigation.navigate('ResumenPago' as never, { planId } as never);
         }
     };
 
     const handleBackToLogin = () => {
-    router.push("/login");
-  };
+        router.push("/login");
+    };
 
     const filteredPlans = plans.filter(plan => plan.tipo_plan === mode);
 
@@ -201,9 +201,9 @@ const Pricing: React.FC = () => {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Botón volver */}
-                <TouchableOpacity 
-                onPress={handleBackToLogin} 
-                style={styles.backButton}>
+                <TouchableOpacity
+                    onPress={handleBackToLogin}
+                    style={styles.backButton}>
                     <Text style={styles.backButtonText}>← Volver a Login</Text>
                 </TouchableOpacity>
                 <View style={[styles.card, styles.transparentCard]}>
@@ -246,13 +246,9 @@ const Pricing: React.FC = () => {
                 <View>
                     <ScrollView
                         ref={scrollViewRef}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
+                        showsVerticalScrollIndicator={true}
                         contentContainerStyle={styles.plansContainer}
-                        snapToInterval={cardWidth}
-                        decelerationRate="fast"
-                        onScroll={handleScroll}
-                        scrollEventThrottle={16}
+
                     >
                         {filteredPlans.map(plan => {
                             const isSelected = selectedPlan === plan.id.toString();
@@ -273,7 +269,7 @@ const Pricing: React.FC = () => {
                     </ScrollView>
 
                     {/* Indicadores de paginación */}
-                    {filteredPlans.length > 1 && (
+                    {/* {filteredPlans.length > 1 && (
                         <View style={styles.dotsContainer}>
                             {filteredPlans.map((_, index) => (
                                 <TouchableOpacity
@@ -286,7 +282,7 @@ const Pricing: React.FC = () => {
                                 />
                             ))}
                         </View>
-                    )}
+                    )} */}
                 </View>
 
                 {filteredPlans.length === 0 && (
@@ -312,12 +308,12 @@ const Pricing: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
-    scrollContent: 
+    scrollContent:
     {
-         flexGrow: 1, 
-         padding: 16,
+        flexGrow: 1,
+        padding: 16,
         marginTop: 30
-         },
+    },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     loadingText: { marginTop: 16, fontSize: 16, color: '#6b7280' },
     errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
@@ -338,8 +334,16 @@ const styles = StyleSheet.create({
     modeButtonActive: { backgroundColor: '#0A1E73' },
     modeButtonText: { fontSize: 14, fontWeight: '500', color: '#6b7280' },
     modeButtonTextActive: { color: '#fff' },
-    plansContainer: { paddingHorizontal: 10, paddingVertical: 20 },
-    planWrapper: { width: Dimensions.get('window').width * 0.8, marginHorizontal: 10 },
+    plansContainer:
+    {
+        paddingVertical: 20,
+        alignItems: 'center',
+        gap: 40,
+    },
+    planWrapper: 
+    { 
+         width: '90%',
+    },
     planWrapperSelected: { transform: [{ scale: 1.05 }] },
     dotsContainer: {
         flexDirection: 'row',

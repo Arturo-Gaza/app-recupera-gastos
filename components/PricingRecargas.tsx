@@ -13,12 +13,12 @@ import {
     View
 } from 'react-native';
 //import PlanCardRecarga from './PlanCardRecarga';
-import { GET_BY_ID_BASICOS } from '@/app/services/apiConstans';
+import { ACTIVAR_PLAN, GET_BY_ID_BASICOS } from '@/app/services/apiConstans';
 import requests from '@/app/services/requests';
+import { useSession } from '@/hooks/useSession';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import PlanCardRecarga from './PlanCardRecarga';
-import { useSession } from '@/hooks/useSession';
 
 // Interfaces
 interface PlanFeature {
@@ -57,7 +57,7 @@ const RecargasPersonales = () => {
     const { width: screenWidth } = Dimensions.get('window');
     const cardWidth = screenWidth * 0.8 + 20;
     const { planId } = useLocalSearchParams();
-    const { session, loading: sessionLoading } = useSession(); 
+    const { session, loading: sessionLoading } = useSession();
 
     // Funciones de API
     const GetAllPlanesBasicos = async (): Promise<ApiResponse> => {
@@ -126,24 +126,39 @@ const RecargasPersonales = () => {
     console.log("la sesion es ", datosCompletos)
 
     const handleOmitir = () => {
-        if(datosCompletos !== true){
+
+        if (datosCompletos !== true) {
             router.push('/datosAlert');
-        }else{
+        } else {
             router.push('/dashboard');
         }
-        
+
     };
 
     const handleActivarPlan = async (planId: string) => {
         try {
+            const response = await requests.post({
+                command: ACTIVAR_PLAN + planId
+            });
 
+            const { data } = response;
 
+            if (data?.success) {
+                Alert.alert("Éxito", data.message);
+                // Lógica de éxito
+                return data;
+            } else {
+                Alert.alert("Error", data?.message);
+                return null;
+            }
         } catch (error: any) {
             console.error("Error:", error);
             Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
             return null;
+        } finally {
+            setLoading(false);
         }
-    };
+    }
 
     if (loading) return (
         <SafeAreaView style={styles.loadingContainer}>
@@ -207,13 +222,12 @@ const RecargasPersonales = () => {
                 <View style={styles.carouselContainer}>
                     <ScrollView
                         ref={scrollViewRef}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
+                        showsVerticalScrollIndicator={true}
                         contentContainerStyle={styles.plansContainer}
-                        snapToInterval={cardWidth}
-                        decelerationRate="fast"
-                        onScroll={handleScroll}
-                        scrollEventThrottle={16}
+                    //snapToInterval={cardWidth}
+                    //decelerationRate="fast"
+                    //onScroll={handleScroll}
+                    //scrollEventThrottle={16}
                     >
                         {plans.map((plan) => {
                             const isSelected = selectedPlan === plan.id.toString();
@@ -254,7 +268,7 @@ const RecargasPersonales = () => {
                     </ScrollView>
 
                     {/* Indicadores de paginación */}
-                    {plans.length > 1 && (
+                    {/* {plans.length > 1 && (
                         <View style={styles.dotsContainer}>
                             {plans.map((_, index) => (
                                 <TouchableOpacity
@@ -267,7 +281,7 @@ const RecargasPersonales = () => {
                                 />
                             ))}
                         </View>
-                    )}
+                    )} */}
                 </View>
 
                 {/* Información adicional */}
@@ -367,13 +381,12 @@ const styles = StyleSheet.create({
         marginBottom: 48,
     },
     plansContainer: {
-        paddingHorizontal: 10,
         paddingVertical: 20,
-        marginTop: -20
+        alignItems: 'center',
+        gap: 20,
     },
     planWrapper: {
-        width: Dimensions.get('window').width * 0.8,
-        marginHorizontal: 10,
+        width: '90%',
     },
     planWrapperSelected: {
         transform: [{ scale: 1.05 }],
