@@ -1,4 +1,4 @@
-import { ACTUALIZAR_RECEPTOR, PROCESAR_TICKET, RECEPTORES_BYUSER, USUARIO_GETBY_ID } from "@/app/services/apiConstans";
+import { ACTUALIZAR_RECEPTOR, ELIMINAR_TICKET, IMAGEN_TICKET, PROCESAR_TICKET, RECEPTORES_BYUSER, USUARIO_GETBY_ID } from "@/app/services/apiConstans";
 import requests from "@/app/services/requests";
 import { useSession } from "@/hooks/useSession";
 import { ChevronDown, Download, Eye, Send, Trash2 } from "lucide-react-native";
@@ -25,6 +25,7 @@ interface Ticket {
     num_ticket: string | null;
     establecimiento: string | null;
     fecha_ticket: string | null;
+    fechaHora: string | null;
     monto: string | null;
     estado_id: number;
     estado_solicitud: {
@@ -49,21 +50,22 @@ export const TicketsTable = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [imageModalVisible, setImageModalVisible] = useState(false);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [showTicketModal, setShowTicketModal] = useState(false);
     const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-    
+
     // Estados para el selector de receptores
     const [options, setOptions] = useState<Option[]>([]);
     const [selectedValues, setSelectedValues] = useState<{ [ticketId: string]: string }>({});
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [expandedSelectors, setExpandedSelectors] = useState<{ [ticketId: string]: boolean }>({});
     const { session, loading: sessionLoading } = useSession();
-
     const userId = session?.IdUsuarioSST || 0;
-    //console.log("el id del usuario es este", userId)
+    const [imagenModalVisible, setImagenModalVisible] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+
+
     const fetchTickets = async () => {
-        
         try {
             setLoading(true);
             const response = await requests.get({ command: USUARIO_GETBY_ID + userId });
@@ -101,7 +103,7 @@ export const TicketsTable = () => {
     const fetchOptions = async () => {
         try {
             // Reemplaza RECEPTORES_BYUSER con tu endpoint real
-            const response = await requests.get({ 
+            const response = await requests.get({
                 command: RECEPTORES_BYUSER + userId // o el userId correspondiente
             });
 
@@ -130,7 +132,7 @@ export const TicketsTable = () => {
                     predeterminado: true
                 };
                 setOptions([defaultOption]);
-                
+
                 const initialSelectedValues: { [ticketId: string]: string } = {};
                 tickets.forEach(ticket => {
                     initialSelectedValues[ticket.id] = String(ticket.id_receptor) || "5";
@@ -173,7 +175,7 @@ export const TicketsTable = () => {
 
         try {
             setIsRefreshing(true);
-            
+
             // Llamar a tu API para actualizar el receptor
             const response = await requests.post({
                 command: ACTUALIZAR_RECEPTOR, // Reemplaza con tu endpoint real
@@ -185,7 +187,7 @@ export const TicketsTable = () => {
 
             // Refrescar tickets para obtener datos actualizados
             await fetchTickets();
-            
+
             Alert.alert("Éxito", "Receptor actualizado correctamente");
         } catch (error: any) {
             // Revertir en caso de error
@@ -204,7 +206,7 @@ export const TicketsTable = () => {
     // Función para toggle del dropdown
     const toggleSelector = (ticketId: string) => {
         const ticket = tickets.find(t => t.id === ticketId);
-        
+
         // Solo permitir abrir si el ticket está en estado 1
         if (ticket && ticket.estado_id !== 1) {
             Alert.alert("No permitido", "Solo puedes cambiar el receptor en tickets con estado 'Cargado'");
@@ -223,11 +225,11 @@ export const TicketsTable = () => {
         setRefreshing(false);
     };
 
-useEffect(() => {
-  if (session?.IdUsuarioSST) {
-    fetchTickets();
-  }
-}, [session]);
+    useEffect(() => {
+        if (session?.IdUsuarioSST) {
+            fetchTickets();
+        }
+    }, [session]);
 
     // Cargar receptores cuando los tickets estén listos
     useEffect(() => {
@@ -287,7 +289,7 @@ useEffect(() => {
     const getSelectedLabel = (ticketId: string): string => {
         const selectedValue = selectedValues[ticketId];
         if (!selectedValue) return "Seleccionar receptor";
-        
+
         const selectedOption = options.find(opt => opt.value === selectedValue);
         return selectedOption?.label || "Seleccionar receptor";
     };
@@ -319,6 +321,23 @@ useEffect(() => {
         }
     };
 
+    const eliminarTicket = async (ticketId: string) => {
+        try {
+            setLoading(true);
+            const response = await requests.get({
+                command: ELIMINAR_TICKET + ticketId,
+            });
+
+            await fetchTickets();
+
+        } catch (error) {
+            console.error("Error eliminando ticket:", error);
+            Alert.alert("Error", "No se pudo eliminar el ticket");
+        } finally {
+            setLoading(false);
+        }
+    }
+
     const handleDelete = (ticketId: string) => {
         Alert.alert(
             "Eliminar Ticket",
@@ -329,7 +348,7 @@ useEffect(() => {
                     text: "Eliminar",
                     style: "destructive",
                     onPress: () => {
-                        setTickets(prev => prev.filter(ticket => ticket.id !== ticketId));
+                        eliminarTicket(ticketId);
                         Alert.alert("Éxito", "Ticket eliminado correctamente");
                     }
                 }
@@ -337,9 +356,33 @@ useEffect(() => {
         );
     };
 
-    const handleViewImage = (imageUrl: string) => {
-        setSelectedImage(imageUrl);
+    const handleViewImage = async (ticketId: string) => {
+        if (!ticketId) return;
+
+        setLoading(true);
         setImageModalVisible(true);
+
+        try {
+            const response = await requests.get({
+                command: IMAGEN_TICKET + ticketId,
+            });
+
+            const result = response.data;
+
+            if (result?.data) {
+                setSelectedImage(`data:image/jpeg;base64,${result.data}`);
+            } else {
+                Alert.alert("No se encontro la imagen");
+                setSelectedImage(null);
+            }
+        } catch (error) {
+            console.error("Error al cargar la imagen:", error);
+            setSelectedImage(null);
+        } finally {
+            setLoading(false);
+        }
+        //setSelectedImage(imageUrl);
+        //setImageModalVisible(true);
     };
 
     const renderTicketItem = ({ item }: { item: Ticket }) => {
@@ -364,7 +407,10 @@ useEffect(() => {
                         {item.establecimiento || 'Establecimiento no identificado'}
                     </Text>
                     <Text style={styles.date}>
-                        Fecha: {item.fecha_ticket || item.created_at}
+                        Fecha Ticket: {item.fecha_ticket}
+                    </Text>
+                     <Text style={styles.date}>
+                        Fecha y Hora: {item.created_at}
                     </Text>
                     <Text style={styles.amount}>
                         Monto: {item.monto ? `$${item.monto}` : 'No disponible'}
@@ -372,7 +418,7 @@ useEffect(() => {
                     <Text style={styles.cfdi}>
                         Uso CFDI: {item.usoCFDI || 'No especificado'}
                     </Text>
-                    
+
                     {/* Selector de Receptores */}
                     <View style={styles.receptorContainer}>
                         <Text style={styles.receptorLabel}>Receptor:</Text>
@@ -386,7 +432,7 @@ useEffect(() => {
                                 onPress={() => toggleSelector(item.id)}
                                 disabled={isDisabled}
                             >
-                                <Text 
+                                <Text
                                     style={[
                                         styles.selectorText,
                                         isDisabled && styles.selectorTextDisabled
@@ -396,8 +442,8 @@ useEffect(() => {
                                     {selectedLabel}
                                 </Text>
                                 {!isDisabled && (
-                                    <ChevronDown 
-                                        size={16} 
+                                    <ChevronDown
+                                        size={16}
                                         color="#374151"
                                         style={[
                                             styles.chevron,
@@ -441,7 +487,7 @@ useEffect(() => {
                 <View style={styles.actions}>
                     <TouchableOpacity
                         style={styles.actionButton}
-                        onPress={() => handleViewImage(item.imagen_url)}
+                        onPress={() => handleViewImage(item.id)}
                     >
                         <Eye size={20} color="#3b82f6" />
                     </TouchableOpacity>
@@ -450,7 +496,7 @@ useEffect(() => {
                         style={styles.actionButton}
                         onPress={() => handleDownload(item.id)}
                     >
-                       <Download size={20} color="#3b82f6" />
+                        <Download size={20} color="#3b82f6" />
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -542,6 +588,7 @@ useEffect(() => {
             />
 
             {/* Modal para ver imagen */}
+            
             <Modal
                 visible={imageModalVisible}
                 animationType="slide"
@@ -565,19 +612,25 @@ useEffect(() => {
                     </View>
 
                     <View style={styles.modalContent}>
-                        {selectedImage ? (
+                        {loading ? (
+                            <View style={styles.loadingContainer}>
+                                <Text style={styles.modalText}>Cargando imagen...</Text>
+                            </View>
+                        ) : selectedImage ? (
                             <Image
                                 source={{ uri: selectedImage }}
                                 style={styles.image}
                                 resizeMode="contain"
                             />
                         ) : (
-                            <Text style={styles.modalText}>No hay imagen disponible</Text>
+                            <View style={styles.noImageContainer}>
+                                <Text style={styles.modalText}>No hay imagen disponible</Text>
+                            </View>
                         )}
                     </View>
                 </View>
             </Modal>
-            
+
             <TicketModal
                 isOpen={showTicketModal}
                 onClose={() => setShowTicketModal(false)}
@@ -857,6 +910,11 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '80%',
         borderRadius: 8,
+    },
+      noImageContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 
