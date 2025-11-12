@@ -1,3 +1,5 @@
+import { CALCULAR_PRECIO } from '@/app/services/apiConstans';
+import requests from '@/app/services/requests';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -33,21 +35,19 @@ interface CalcularPrecio {
 // Simula la función de la API - reemplaza con tu implementación real
 const GetCalcularPrecios = async (ticketId: number) => {
   // Tu implementación real de la API aquí
-  return {
-    success: true,
-    data: {
-      error: null,
-      factura_numero: "FAC-001",
-      insuficiente_saldo: false,
-      monto_a_cobrar: "10.00",
-      saldo_actual: "100.00",
-      saldo_despues: "90.00",
-      tier: "Gratis",
-      tipo: "normal",
-      facturaTotalGratis: "5",
-      factura_restante: "3"
+    try {
+        const response = await requests.get({ 
+            command: CALCULAR_PRECIO + ticketId
+        });
+        return response.data;
+    } catch (err) {
+        return { 
+            success: false, 
+            data: [], 
+            data2: null, 
+            message: 'Error al obtener los movimientos' 
+        };
     }
-  };
 };
 
 export function TicketModal({ isOpen, onClose, ticketId, procesarTicket }: TicketModalProps) {
