@@ -249,7 +249,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
                 }}
               >
                 <Wallet size={20} color="#10b981" />
-                <Text style={styles.sidebarItemText}>"Recargar y consultar saldo</Text>
+                <Text style={styles.sidebarItemText}>Recargar y consultar saldo</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

@@ -1,5 +1,6 @@
 import { ACTIVAR_PLAN, GET_ALL_PLANES } from '@/app/services/apiConstans';
 import requests from '@/app/services/requests';
+import { useSession } from '@/hooks/useSession';
 import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -93,6 +94,9 @@ const Pricing: React.FC = () => {
     const navigation = useNavigation();
     const { width: screenWidth } = Dimensions.get('window');
     const cardWidth = screenWidth * 0.8 + 20;
+    const [contenidoHooks, setContenidoHooks] = useState({});
+    const { session, loading: sessionLoading } = useSession();
+
 
     // Fetch planes
     useEffect(() => {
@@ -157,6 +161,11 @@ const Pricing: React.FC = () => {
     }
     //funcion que manda a pantalla de recargas
     const handleButtonClick = async (planId: string, planName: string) => {
+
+         setContenidoHooks((prev: any) => ({
+      ...prev,
+      IdPlan: planId,
+    }));
         setSelectedPlan(planId);
         if (planId === "1" || planId === "2" || planId === "3") {
             router.push({

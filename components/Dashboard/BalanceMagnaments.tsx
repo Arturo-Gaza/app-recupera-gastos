@@ -12,6 +12,8 @@ import {
     View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import RecargasPersonales from './PlanRecargasDashboard';
+
 
 // Interfaces
 interface BalanceManagementProps {
@@ -263,7 +265,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
 
                 <Card style={styles.card}>
                     <CardContent>
-                        <Text>Componente de Recargas Personales</Text>
+                        <RecargasPersonales/>
                     </CardContent>
                 </Card>
             </ScrollView>

@@ -54,11 +54,13 @@ const handleLogin = async (email: string, password: string, setLoading: (val: bo
           tienDatoFiscalSST: data.data.tienDatoFiscal || false,
           Password_temporalSST: data.data.password_temporal || false,
           tieneSuscripcionActivaSST: data.data.tieneSuscripcionActiva || false,
+          IdPlanSST: data.data.suscripcionActiva?.id_plan || null
         };
 
         // Guardar en AsyncStorage
+       
         await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(dataSST));
-
+         console.log("id paln en el login",dataSST.IdPlanSST)
         if (!dataSST.tieneSuscripcionActivaSST) {
           router.replace("/Planes");
         } else if (!dataSST.DatosCompletosSST) {

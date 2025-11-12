@@ -21,6 +21,7 @@ interface UserSession {
   tienDatoFiscalSST: boolean;
   Password_temporalSST: boolean;
   tieneSuscripcionActivaSST: boolean;
+  IdPlanSST: number; 
 }
 
 export const useSession = () => {
