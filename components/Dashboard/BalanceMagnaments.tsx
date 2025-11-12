@@ -1,6 +1,7 @@
 import { GET_MIS_MOVIMIENTOS, MOVIMIENTO_EXPORT_EXCEL } from '@/app/services/apiConstans';
 import requests from '@/app/services/requests';
 import { useSession } from '@/hooks/useSession';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -11,7 +12,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RecargasPersonales from './PlanRecargasDashboard';
 
 
@@ -288,7 +288,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
                         disabled={loadDataExportExcel}
                         style={styles.exportButton}
                     >
-                        <Icon name="file-excel" size={16} style={styles.buttonIcon} />
+                        <MaterialCommunityIcons name="file-excel-box" size={24} color="green" />
                         <Text style={styles.buttonText}>
                             {loadDataExportExcel ? 'Descargando...' : 'Exportar Excel'}
                         </Text>
@@ -299,7 +299,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
                         disabled={loadDataExportPDF}
                         style={styles.exportButton}
                     >
-                        <Icon name="file-pdf" size={16} style={styles.buttonIcon} />
+                        <MaterialCommunityIcons name="file-pdf-box" size={24} color="red" />
                         <Text style={styles.buttonText}>
                             {loadDataExportPDF ? 'Descargando...' : 'Exportar PDF'}
                         </Text>

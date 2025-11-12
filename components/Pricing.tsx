@@ -144,7 +144,7 @@ const Pricing: React.FC = () => {
             const { data } = response;
 
             if (data?.success) {
-                Alert.alert("Éxito", data.message);
+                //Alert.alert("Éxito", data.message);
                 // Lógica de éxito
                 return data;
             } else {

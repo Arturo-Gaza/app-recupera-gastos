@@ -19,7 +19,8 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
-    marginTop: -25
+    marginTop: -25,
+    alignSelf: "center",
   },
   title: { fontSize: 22, fontWeight: "bold", textAlign: "center", marginBottom: 5 },
   subtitle: { fontSize: 14, color: "#666", textAlign: "center", marginBottom: 20 },

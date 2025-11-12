@@ -58,40 +58,69 @@ const RecargasPersonales = () => {
     const { session, loading: sessionLoading } = useSession();
 
     const idPlan = session?.IdPlanSST;
-    console.log("el plan", idPlan)
+    
     // Funciones de API
-    const GetAllPlanesBasicos = async (): Promise<ApiResponse> => {
-        try {
-            const response = await requests.get({ command: GET_BY_ID_BASICOS + idPlan });
-            return response.data;
-        } catch (err) {
-            return { success: false, data: [], data2: null, message: 'Error al obtener planes básicos' };
-        }
-    };
+    const GetAllPlanesBasicos = async (idPlan?: number): Promise<ApiResponse> => {
+  if (!idPlan) {
+    
+    return { success: false, data: [], data2: null, message: "idPlan no válido" };
+  }
+
+  try {
+    
+    const response = await requests.get({ command: GET_BY_ID_BASICOS + idPlan });
+    return response.data;
+  } catch (err) {
+    
+    return { success: false, data: [], data2: null, message: "Error al obtener planes básicos" };
+  }
+};
+
 
 
     const getPlanFeatures = (plan: PlanFromAPI): PlanFeature[] => {
         return [];
     };
 
-    useEffect(() => {
-        const fetchPlans = async () => {
-            try {
-                setLoading(true);
-                const response: ApiResponse = await GetAllPlanesBasicos();
-                if (response.success && response.data) {
-                    setPlans(response.data);
-                } else {
-                    throw new Error(response.message || "Error al cargar los planes");
-                }
-            } catch (err) {
-                setError(err instanceof Error ? err.message : "Error desconocido");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchPlans();
-    }, []);
+ useEffect(() => {
+  const fetchPlans = async () => {
+    // Evita ejecutar mientras se carga la sesión
+    if (sessionLoading) {
+      
+      return;
+    }
+
+    // Verifica si el IdPlanSST existe
+    if (!session?.IdPlanSST) {
+      
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const idPlan = session.IdPlanSST;
+
+      const response: ApiResponse = await GetAllPlanesBasicos(idPlan);
+
+      if (response.success && response.data) {
+        setPlans(response.data);
+        
+      } else {
+        
+        throw new Error(response.message || "Error al cargar los planes");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error desconocido");
+      
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchPlans();
+}, [session?.IdPlanSST, sessionLoading]);
+
+
 
     const handleScroll = (event: any) => {
         const contentOffsetX = event.nativeEvent.contentOffset.x;
@@ -123,7 +152,7 @@ const RecargasPersonales = () => {
         }
     };
     const datosCompletos = session?.DatosCompletosSST;
-    console.log("la sesion es ", datosCompletos)
+    
 
     const handleOmitir = () => {
 

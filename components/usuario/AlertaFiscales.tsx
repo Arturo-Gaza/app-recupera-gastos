@@ -24,7 +24,7 @@ const AlertaFiscales: React.FC<AlertaFiscalesProps> = ({ onSubmit, onLater, load
     };
 
     const handleLater = () => {
-        router.push("/login");
+        router.push("/dashboard");
 
         // Alert.alert(
         //     "Información importante",
