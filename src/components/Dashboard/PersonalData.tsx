@@ -4,14 +4,14 @@ import requests from "@/src/services/requests";
 import Checkbox from "expo-checkbox";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function PersonalDataManagement() {
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
     },
     button: {
-        backgroundColor: "#007AFF",
+        backgroundColor: "#1A2A6C",
         paddingVertical: 14,
         borderRadius: 10,
         alignItems: "center",

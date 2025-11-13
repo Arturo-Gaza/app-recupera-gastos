@@ -25,11 +25,13 @@ import { styles } from "@/src/styles/DashboardStyle";
 import { router } from 'expo-router';
 import { useSession } from '../../hooks/useSession';
 import BalanceManagement from "./BalanceMagnaments";
+import { AccountManagement } from "./ConfiguracionCuenta";
 import { DashboardTab } from "./DashboardTab";
 import FileUpload from "./FileUpload";
 import PersonalDataManagement from "./PersonalData";
 import RecipientsManagement from "./Receptores";
 import TicketsTable from "./TableTickets";
+import { UsersManagement } from "./UserMagnament";
 
 interface DashboardProps {
   onBack?: () => void;
@@ -39,6 +41,9 @@ export default function Dashboard({ onBack }: DashboardProps) {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const { session, loading: sessionLoading } = useSession();
+  const [activeAccountSubSection, setActiveAccountSubSection] = useState("/account/block");
+
+
 
   const [currentDate] = useState(new Date().toLocaleDateString('es-MX', {
     weekday: 'long',
@@ -180,6 +185,11 @@ export default function Dashboard({ onBack }: DashboardProps) {
     </View>
   );
 
+  const handleAccountBack = () => {
+    setActiveTab("dashboard"); // o la pestaña que quieras
+  };
+
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "dashboard":
@@ -197,6 +207,16 @@ export default function Dashboard({ onBack }: DashboardProps) {
         return <PersonalDataManagement />
       case "receptor":
         return <RecipientsManagement />
+      case "colaborador":
+        return <UsersManagement />
+      case "cuenta":
+        return (
+          <AccountManagement
+            activeSubSection={activeAccountSubSection}
+            onBack={handleAccountBack}
+          />
+        );
+
       case "carga":
         return (
           <View style={styles.fileUploadContainer}>
@@ -274,13 +294,24 @@ export default function Dashboard({ onBack }: DashboardProps) {
                 <UserCheck size={20} color="#000000ff" />
                 <Text style={styles.sidebarItemText}>Administrar mis receptores</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.sidebarItem}>
+              <TouchableOpacity
+                style={[styles.sidebarItem, activeTab === "cuenta" && styles.activeSidebarItem]}
+                onPress={() => {
+                  handleTabChange("cuenta");
+                  setSidebarVisible(false);
+                }}
+              >
                 <Settings2 size={20} color="#fa0000ff" />
                 <Text style={styles.sidebarItemText}>Administrar mi cuenta</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.sidebarItem}>
+              <TouchableOpacity
+                style={[styles.sidebarItem, activeTab === "colaborador" && styles.activeSidebarItem]}
+                onPress={() => {
+                  handleTabChange("colaborador");
+                  setSidebarVisible(false);
+                }}
+              >
                 <Users size={20} color="#2c0092ff" />
                 <Text style={styles.sidebarItemText}>Administrar mis usuarios</Text>
               </TouchableOpacity>
@@ -305,7 +336,9 @@ export default function Dashboard({ onBack }: DashboardProps) {
       <Header />
 
       {/* Mostrar NavigationTabs solo cuando NO esté en la pestaña balance */}
-      {activeTab !== "balance" && <NavigationTabs />}
+
+      {activeTab !== "balance" && activeTab !== "cuenta" && <NavigationTabs />}
+
 
       {activeTab === "receptor" ? (
         renderTabContent()

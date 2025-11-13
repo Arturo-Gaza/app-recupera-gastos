@@ -338,7 +338,7 @@ export function DashboardTab() {
                 width={screenWidth - 72}
                 isAnimated={true}
                 showVerticalLines={false}
-                yAxisTextStyle={{ color: '#6b7280', fontSize: 10 }}
+                yAxisTextStyle={{ color: '#ffffffff', fontSize: 10 }}
                 xAxisLabelTextStyle={{ color: '#6b7280', fontSize: 10, textAlign: 'center' }}
                 showValuesAsTopLabel={true}
                 topLabelTextStyle={{ color: '#1f2937', fontSize: 10, fontWeight: 'bold' }}

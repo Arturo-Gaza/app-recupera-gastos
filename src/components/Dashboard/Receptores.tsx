@@ -4,15 +4,15 @@ import requests from "@/src/services/requests";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 
@@ -134,16 +134,37 @@ export default function RecipientsManagement() {
                 renderItem={({ item }) => (
                     <View style={styles.card}>
                         <View style={styles.cardRow}>
-                            <Text style={styles.label}>RFC:</Text>
-                            <Text style={styles.value}>{item.rfc}</Text>
+                            <Text style={styles.label}>RFC: {item.rfc}</Text>
+                            <Text style={styles.value}></Text>
                         </View>
                         <View style={styles.cardRow}>
-                            <Text style={styles.label}>Razón Social:</Text>
-                            <Text style={styles.value}>{item.razonSocial}</Text>
+                            <Text style={styles.label}>Razón Social: {item.razonSocial}</Text>
+                            <Text style={styles.value}></Text>
                         </View>
                         <View style={styles.cardRow}>
-                            <Text style={styles.label}>Código Postal:</Text>
-                            <Text style={styles.value}>{item.codigoPostal}</Text>
+                            <Text style={styles.label}>Código Postal: {item.codigoPostal}</Text>
+                            <Text style={styles.value}></Text>
+                        </View>
+                        <View style={styles.cardRow}>
+                            <Text style={styles.label}>Régimen Fiscal:</Text>
+                            <Text style={styles.value}>{item.regimenFiscal}</Text>
+                        </View>
+                        <View style={styles.cardRow}>
+                            <Text style={styles.label}>Predeterminado:</Text>
+                            <View style={styles.checkboxContainer}>
+                                 <Text style={styles.checkboxLabel}>Predeterminado:  
+                                    
+                                </Text>
+                                <View style={[
+                                    styles.checkbox,
+                                    item.predeterminado && styles.checkboxChecked
+                                ]}>
+                                    {item.predeterminado && (
+                                        <Icon name="checkmark" size={14} color="#fff" />
+                                    )}
+                                </View>
+                               
+                            </View>
                         </View>
                         <View style={styles.cardRow}>
                             <Text style={styles.label}>Estatus:</Text>
@@ -186,11 +207,32 @@ export default function RecipientsManagement() {
                         <Text style={styles.modalTitle}>Detalles del Receptor</Text>
                         {selectedRecipient && (
                             <>
-                                <Text>RFC: {selectedRecipient.rfc}</Text>
-                                <Text>Razón Social: {selectedRecipient.razonSocial}</Text>
-                                <Text>Código Postal: {selectedRecipient.codigoPostal}</Text>
-                                <Text>Régimen: {selectedRecipient.regimenFiscal}</Text>
-                                <Text>Estatus: {selectedRecipient.estatus}</Text>
+                                <View style={styles.modalRow}>
+                                    <Text style={styles.modalLabel}>RFC:</Text>
+                                    <Text style={styles.modalValue}>{selectedRecipient.rfc}</Text>
+                                </View>
+                                <View style={styles.modalRow}>
+                                    <Text style={styles.modalLabel}>Razón Social:</Text>
+                                    <Text style={styles.modalValue}>{selectedRecipient.razonSocial}</Text>
+                                </View>
+                                <View style={styles.modalRow}>
+                                    <Text style={styles.modalLabel}>Código Postal:</Text>
+                                    <Text style={styles.modalValue}>{selectedRecipient.codigoPostal}</Text>
+                                </View>
+                                <View style={styles.modalRow}>
+                                    <Text style={styles.modalLabel}>Régimen Fiscal:</Text>
+                                    <Text style={styles.modalValue}>{selectedRecipient.regimenFiscal}</Text>
+                                </View>
+                                <View style={styles.modalRow}>
+                                    <Text style={styles.modalLabel}>Predeterminado:</Text>
+                                    <Text style={styles.modalValue}>
+                                        {selectedRecipient.predeterminado ? "Sí" : "No"}
+                                    </Text>
+                                </View>
+                                <View style={styles.modalRow}>
+                                    <Text style={styles.modalLabel}>Estatus:</Text>
+                                    <Text style={styles.modalValue}>{selectedRecipient.estatus}</Text>
+                                </View>
                             </>
                         )}
                         <TouchableOpacity
@@ -226,9 +268,14 @@ const styles = StyleSheet.create({
         marginVertical: 6,
         elevation: 2,
     },
-    cardRow: { flexDirection: "row", justifyContent: "space-between" },
-    label: { fontWeight: "600", color: "#333" },
-    value: { color: "#555", maxWidth: "60%" },
+    cardRow: { 
+        flexDirection: "row", 
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 8,
+    },
+    label: { fontWeight: "600", color: "#333", flex: 1 },
+    value: { color: "#555", flex: 1, textAlign: "right" },
     status: {
         color: "#fff",
         paddingHorizontal: 8,
@@ -236,6 +283,30 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         textAlign: "center",
         minWidth: 70,
+    },
+    checkboxContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+        justifyContent: "flex-end",
+    },
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderWidth: 2,
+        borderColor: "#ccc",
+        borderRadius: 4,
+        marginRight: 8,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    checkboxChecked: {
+        backgroundColor: "#1A2A6C",
+        borderColor: "#1A2A6C",
+    },
+    checkboxLabel: {
+        color: "#555",
+        fontSize: 14,
     },
     actions: {
         flexDirection: "row",
@@ -261,10 +332,31 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         width: "80%",
     },
-    modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+    modalTitle: { 
+        fontSize: 18, 
+        fontWeight: "bold", 
+        marginBottom: 15,
+        textAlign: "center",
+    },
+    modalRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 10,
+        paddingVertical: 4,
+    },
+    modalLabel: {
+        fontWeight: "600",
+        color: "#333",
+        flex: 1,
+    },
+    modalValue: {
+        color: "#555",
+        flex: 1,
+        textAlign: "right",
+    },
     closeButton: {
         backgroundColor: "#007AFF",
-        padding: 10,
+        padding: 12,
         borderRadius: 8,
         alignItems: "center",
         marginTop: 15,
