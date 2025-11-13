@@ -460,7 +460,7 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
       });
 
       const result = response.data;
-      setSuccessMessage(result?.message || "Contraseña actualizada correctamente");
+      setSuccessMessage(result?.message);
       setShowSuccessModal(true);
 
       setNewPassword('');

@@ -2,7 +2,7 @@ import { useSession } from "@/src/hooks/useSession";
 import { ACTUALIZAR_RECEPTOR, ELIMINAR_TICKET, IMAGEN_TICKET, PROCESAR_TICKET, RECEPTORES_BYUSER, USUARIO_GETBY_ID } from "@/src/services/apiConstans";
 import requests from "@/src/services/requests";
 import { styles } from '@/src/styles/TableTicketsStyle';
-import { ChevronDown, Download, Eye, Send, Trash2 } from "lucide-react-native";
+import { CheckCircle, ChevronDown, Download, Eye, Send, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -17,6 +17,8 @@ import {
     View
 } from "react-native";
 import TicketModal from "../Modales/ModalTicket";
+import ViewInvoiceDocumentsModal from "../Modales/VerDocumentosFacturas";
+
 
 
 // Interface basada en tu respuesta real de API
@@ -62,6 +64,7 @@ export const TicketsTable = () => {
     const userId = session?.IdUsuarioSST || 0;
     const [imagenModalVisible, setImagenModalVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [showFacturaModal, setShowFacturaModal] = useState(false);
 
 
 
@@ -103,7 +106,7 @@ export const TicketsTable = () => {
     const fetchOptions = async () => {
         try {
             const response = await requests.get({
-                command: RECEPTORES_BYUSER + userId 
+                command: RECEPTORES_BYUSER + userId
             });
 
             const data = response?.data?.data;
@@ -140,7 +143,7 @@ export const TicketsTable = () => {
             }
         } catch (error) {
             console.error("Error al cargar receptores:", error);
-            
+
         }
     };
 
@@ -274,7 +277,7 @@ export const TicketsTable = () => {
             case 7: return 'Rechazado';
             case 8: return 'Descargado';
             case 9: return 'Concluido';
-            default: return 'Sin estado';
+            default: return '';
         }
     };
 
@@ -349,6 +352,11 @@ export const TicketsTable = () => {
         );
     };
 
+    const handleFactura = (ticketId: string) => {
+        setSelectedTicketId(ticketId);
+        setShowFacturaModal(true);
+    };
+
     const handleViewImage = async (ticketId: string) => {
         if (!ticketId) return;
 
@@ -402,7 +410,7 @@ export const TicketsTable = () => {
                     <Text style={styles.date}>
                         Fecha Ticket: {item.fecha_ticket}
                     </Text>
-                     <Text style={styles.date}>
+                    <Text style={styles.date}>
                         Fecha y Hora: {item.created_at}
                     </Text>
                     <Text style={styles.amount}>
@@ -502,6 +510,16 @@ export const TicketsTable = () => {
                             color={item.estado_id !== 1 ? "#afafafff" : "#000000ff"}
                         />
                     </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.processButton]}
+                        onPress={() => handleFactura(item.id)}
+                        disabled={[1, 2, 3, 4, 5, 6, 7, 8, 10].includes(item.estado_id)}
+                    >
+                        <CheckCircle
+                            size={20}
+                            color={item.estado_id !== 1 ? "#000000ff" : "#717171ff"}
+                        />
+                    </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[styles.actionButton, styles.deleteButton]}
@@ -581,7 +599,7 @@ export const TicketsTable = () => {
             />
 
             {/* Modal para ver imagen */}
-            
+
             <Modal
                 visible={imageModalVisible}
                 animationType="slide"
@@ -629,6 +647,11 @@ export const TicketsTable = () => {
                 onClose={() => setShowTicketModal(false)}
                 ticketId={selectedTicketId}
                 procesarTicket={procesarTicket}
+            />
+            <ViewInvoiceDocumentsModal
+                open={showFacturaModal}
+                onOpenChange={setShowFacturaModal}
+                ticketid={selectedTicketId}
             />
         </View>
     );
