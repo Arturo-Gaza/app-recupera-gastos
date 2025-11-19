@@ -1,4 +1,7 @@
-import { CardField, useConfirmPayment } from '@stripe/stripe-react-native';
+import {
+  initPaymentSheet,
+  presentPaymentSheet
+} from '@stripe/stripe-react-native';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -22,13 +25,32 @@ type PaymentStatus =
   'failed';
 
 export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormProps) {
-  const { confirmPayment, loading: stripeLoading } = useConfirmPayment();
-  
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [cardDetails, setCardDetails] = useState<any>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
 
+  // Inicializa la PaymentSheet
+  useEffect(() => {
+    if (!clientSecret) return;
+
+    const initializeSheet = async () => {
+      const { error } = await initPaymentSheet({
+        merchantDisplayName: "Mi App",
+        allowsDelayedPaymentMethods: false,
+        paymentIntentClientSecret: clientSecret,
+      });
+
+      if (error) {
+        setMessage("Error al inicializar formulario de pago.");
+        console.log("Stripe init error:", error);
+      }
+    };
+
+    initializeSheet();
+  }, [clientSecret]);
+
+  // Redirección en éxito
   useEffect(() => {
     if (paymentStatus === 'succeeded') {
       const timer = setTimeout(() => {
@@ -38,36 +60,24 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
     }
   }, [paymentStatus]);
 
-  const handleSubmit = async () => {
-    if (!cardDetails?.complete) {
-      setMessage("Por favor completa los datos de tu tarjeta.");
-      return;
-    }
+  // Abre PaymentSheet
+  const openPaymentSheet = async () => {
+    setMessage(null);
+    setLoading(true);
+    setPaymentStatus('processing');
 
-    if (cardDetails?.error) {
-      setMessage(cardDetails.error.message);
+    const { error } = await presentPaymentSheet();
+
+    if (error) {
+      setPaymentStatus('failed');
+      setMessage(error.message || "El pago no se completó.");
+      setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
-      setMessage(null);
-      setPaymentStatus('processing');
-
-      const { paymentIntent, error } = await confirmPayment(clientSecret, {
-        paymentMethodType: 'Card',
-        paymentMethodData: {
-          billingDetails: {
-            email: userEmail || "cliente@example.com",
-          },
-        },
-      });
-
-      if (error) {
-        setMessage(`Error de pago: ${error.message}`);
-        setPaymentStatus('failed');
-        return;
-      }
+      // Confirmación backend igual que antes
+      const paymentIntentId = clientSecret.split('_secret')[0];
 
       const confirmResponse = await fetch(
         'http://192.168.1.171:8000/api/stripe/confirmStripePayment',
@@ -75,7 +85,7 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            payment_intent_id: paymentIntent?.id,
+            payment_intent_id: paymentIntentId,
           }),
         }
       );
@@ -83,31 +93,17 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
       const confirmData = await confirmResponse.json();
       console.log("Backend:", confirmData);
 
-      switch (paymentIntent?.status) {
-        case 'Succeeded':
-          setPaymentStatus('succeeded');
-          break;
-        case 'RequiresAction':
-          setPaymentStatus('requires_action');
-          setMessage("Tu pago requiere verificación adicional.");
-          break;
-        case 'RequiresPaymentMethod':
-          setPaymentStatus('failed');
-          setMessage("El método de pago falló. Intenta otra tarjeta.");
-          break;
-        default:
-          setPaymentStatus('failed');
-          setMessage(`Estado de pago: ${paymentIntent?.status}`);
-      }
+      setPaymentStatus('succeeded');
 
-    } catch (error) {
-      setMessage("Error de conexión. Revisa tu internet.");
+    } catch (err) {
       setPaymentStatus('failed');
-    } finally {
-      setLoading(false);
+      setMessage("Error del servidor.");
     }
+
+    setLoading(false);
   };
 
+  // Pantalla de éxito
   if (paymentStatus === 'succeeded') {
     return (
       <View style={styles.successContainer}>
@@ -124,13 +120,12 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
     );
   }
 
-  const isProcessing = loading || stripeLoading;
-  const isDisabled = isProcessing || !cardDetails?.complete;
+  const isProcessing = loading;
 
   return (
     <View style={styles.container}>
 
-      {/* Header Stripe Clean */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>← Regresar</Text>
@@ -138,42 +133,25 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
         <Text style={styles.headerTitle}>Confirmar Pago</Text>
       </View>
 
-      {/* Tarjeta principal */}
+      {/* Card principal */}
       <View style={styles.formCard}>
 
         <View style={styles.cardSection}>
-          <Text style={styles.sectionTitle}>Información de la Tarjeta</Text>
+          <Text style={styles.sectionTitle}>Información de Pago</Text>
 
-          <CardField
-            postalCodeEnabled={true}
-            placeholders={{
-              number: '4242 4242 4242 4242',
-              postalCode: '90210',
-            }}
-            style={styles.cardField}
-            onCardChange={setCardDetails}
-          />
-
-          {cardDetails?.error && (
-            <Text style={styles.fieldError}>
-              {cardDetails.error.message}
-            </Text>
-          )}
+          {/* Botón que abre PaymentSheet */}
+          <TouchableOpacity 
+            style={styles.sheetButton}
+            onPress={openPaymentSheet}
+            activeOpacity={0.85}
+          >
+            {isProcessing ? (
+              <ActivityIndicator color="#1e293b" />
+            ) : (
+              <Text style={styles.sheetButtonText}>Ingresar datos de tarjeta</Text>
+            )}
+          </TouchableOpacity>
         </View>
-
-        {/* Botón Stripe Clean */}
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={[styles.payButton, isDisabled && styles.payButtonDisabled]}
-          disabled={isDisabled}
-          onPress={handleSubmit}
-        >
-          {isProcessing ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.payText}>Pagar Ahora</Text>
-          )}
-        </TouchableOpacity>
 
         {message && (
           <Text
@@ -203,7 +181,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f6f9fc',
   },
 
-  /* Header estilo Stripe */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -221,8 +198,8 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
 
-  /* Card Stripe */
   formCard: {
+    width: "100%",
     backgroundColor: '#fff',
     padding: 22,
     borderRadius: 14,
@@ -233,7 +210,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  /* Secciones */
   cardSection: { marginBottom: 25 },
   sectionTitle: {
     fontSize: 16,
@@ -241,43 +217,21 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     marginBottom: 10,
   },
-  cardField: {
-    height: 50,
-    backgroundColor: '#f8fafc',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#dce0e6',
-    paddingHorizontal: 12,
-  },
-  fieldError: {
-    color: '#d00',
-    fontSize: 13,
-    marginTop: 6,
-  },
 
-  /* Botón Stripe */
-  payButton: {
-    backgroundColor: "#635BFF",
-    paddingVertical: 16,
+  sheetButton: {
+    backgroundColor: "#f1f5f9",
     borderRadius: 10,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
     alignItems: "center",
-    marginTop: 10,
-    shadowColor: '#635BFF',
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
   },
-  payButtonDisabled: {
-    backgroundColor: "#a5a7c4",
-    shadowOpacity: 0,
-  },
-  payText: {
-    color: "#fff",
+  sheetButtonText: {
+    color: "#1e293b",
     fontSize: 16,
     fontWeight: "600",
   },
 
-  /* Mensajes */
   message: {
     marginTop: 15,
     padding: 12,
@@ -309,7 +263,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* Éxito */
   successContainer: {
     flex: 1,
     justifyContent: "center",

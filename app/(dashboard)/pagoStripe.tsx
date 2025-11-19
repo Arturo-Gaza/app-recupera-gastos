@@ -6,17 +6,17 @@ export default function CheckoutPageScreen() {
   const params = useLocalSearchParams();
   
   // Extraer parámetros de forma segura
-  const idRecarga = "1";
-  const tipoPago = "prepago";
+  const idRecarga = params.idRecarga as string;
+  const tipoPago = params.tipoPago as string ;
 
   console.log("Parámetros recibidos:", { idRecarga, tipoPago });
 
   // Validación de parámetros requeridos
-  if (!idRecarga || !tipoPago) {
+  if (!idRecarga) {
     console.warn("Parámetros incompletos:", { idRecarga, tipoPago });
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Parámetros de pago incompletos</Text>
+        <Text style={styles.errorText}>ID de recarga no especificado</Text>
       </View>
     );
   }
