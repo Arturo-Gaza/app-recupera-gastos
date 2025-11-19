@@ -54,10 +54,12 @@ const handleLogin = async (email: string, password: string, setLoading: (val: bo
           tienDatoFiscalSST: data.data.tienDatoFiscal || false,
           Password_temporalSST: data.data.password_temporal || false,
           tieneSuscripcionActivaSST: data.data.tieneSuscripcionActiva || false,
-          IdPlanSST: data.data.suscripcionActiva?.id_plan || null
+          IdPlanSST: data.data.suscripcionActiva?.id_plan || null,
+          TipoPagoSST: data.data.suscripcionActiva?.plan?.tipo_pago || null
         };
 
         // Guardar en AsyncStorage
+        console.log("el tipo pago", dataSST.TipoPagoSST)
        
         await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(dataSST));
          

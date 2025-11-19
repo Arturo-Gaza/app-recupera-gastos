@@ -141,6 +141,7 @@ const RecargasPersonales = () => {
     };
 
     const handlePlanSelect = async (planId: string) => {
+        router.push('/pagoStripe');
         try {
             // Navegar a la pantalla de pago con el plan seleccionado
             // navigation.navigate('PagoStripe' as never, { 

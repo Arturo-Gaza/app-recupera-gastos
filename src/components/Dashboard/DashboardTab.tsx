@@ -325,8 +325,8 @@ export function DashboardTab() {
                 spacing={30}
                 initialSpacing={20}
                 endSpacing={20}
-                roundedTop={true}
-                roundedBottom={true}
+                roundedTop={false}
+                roundedBottom={false}
                 hideRules={true}
                 xAxisThickness={1}
                 yAxisThickness={1}

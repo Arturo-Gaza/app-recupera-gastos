@@ -8,6 +8,11 @@
     "scheme": "recupergastos",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
+    "extra": {
+      "stripePublishableKey": "pk_test_51SJN1HPv6B5q0zjI8gcWs4Ygt4NiFWfgxtF0HPwkcTbCWuNfhCthenv2yfQs6guWkHiiCY672qHmBYVXdrhjEjaT0067dEf8bV"
+    },
+
     "ios": {
       "supportsTablet": true
     },
