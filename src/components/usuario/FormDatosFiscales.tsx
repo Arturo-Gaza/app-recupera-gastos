@@ -19,7 +19,6 @@ import {
 import { Checkbox } from 'react-native-paper';
 import { useSession } from '../../hooks/useSession';
 
-
 // ========== INTERFACES ==========
 interface DomicilioFiscal {
   calle?: string;
@@ -124,7 +123,6 @@ function SuccessStep({
       );
     }
     router.push('/metodoRegistroFiscal');
-
   };
 
   const handlerDash = () => {
@@ -150,17 +148,12 @@ function SuccessStep({
             <TouchableOpacity
               style={[successStyles.button, successStyles.outlineButton]}
               onPress={handlerDash}
-
             >
               <Text style={successStyles.outlineButtonText}>Ir al Dashboard</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[successStyles.button, successStyles.outlineButton]}
-            // onPress={() => router.push({
-            //   pathname: '/dashboard',
-            //   params: { section: 'receptores' }
-            // })}
             >
               <Text style={successStyles.outlineButtonText}>Gestionar receptores</Text>
             </TouchableOpacity>
@@ -174,7 +167,6 @@ function SuccessStep({
           </View>
         </View>
       </View>
-
     </View>
   );
 }
@@ -251,7 +243,15 @@ const successStyles = StyleSheet.create({
 });
 
 // ========== COMPONENTE PRINCIPAL ==========
-export default function FormDatosFiscalesCompleto() {
+interface FormDatosFiscalesCompletoProps {
+  initialData?: any;
+  modo?: 'creacion' | 'edicion';
+}
+
+export default function FormDatosFiscalesCompleto({ 
+  initialData, 
+  modo = 'creacion' 
+}: FormDatosFiscalesCompletoProps) {
   const router = useRouter();
   const params = useLocalSearchParams();
 
@@ -296,10 +296,66 @@ export default function FormDatosFiscalesCompleto() {
   const [loadingCSF, setLoadingCSF] = useState(false);
   const { session, loading: sessionLoading } = useSession();
 
+  // NUEVO: Cargar datos de edición
+  useEffect(() => {
+    if (initialData && modo === 'edicion') {
+      cargarDatosEdicion(initialData);
+    }
+  }, [initialData, modo]);
+
+  //NUEVA FUNCIÓN: Cargar datos cuando estamos editando
+  const cargarDatosEdicion = (datosEdicion: any) => {
+    
+    
+    setThirdPartyData({
+      es_persona_moral: datosEdicion.es_persona_moral || false,
+      nombre_razon: datosEdicion.nombre_razon || '',
+      primer_apellido: datosEdicion.primer_apellido || '',
+      segundo_apellido: datosEdicion.segundo_apellido || '',
+      nombre_comercial: datosEdicion.nombre_comercial || '',
+      rfc: datosEdicion.rfc || '',
+      curp: datosEdicion.curp || '',
+      email_facturacion_text: datosEdicion.email_facturacion_text || '',
+      fecha_inicio_op: datosEdicion.fecha_inicio_op || '',
+      fecha_emision: datosEdicion.fecha_emision || '',
+      lugar_emision: datosEdicion.lugar_emision || '',
+      id_estatus_sat: datosEdicion.id_estatus_sat || 1,
+      predeterminado: datosEdicion.predeterminado ?? true,
+      idCIF: datosEdicion.idCIF || '',
+      domicilioFiscal: {
+        calle: datosEdicion.domicilioFiscal?.calle || '',
+        num_exterior: datosEdicion.domicilioFiscal?.num_exterior || '',
+        num_interior: datosEdicion.domicilioFiscal?.num_interior || '',
+        codigo_postal: datosEdicion.domicilioFiscal?.codigo_postal || '',
+        colonia: datosEdicion.domicilioFiscal?.colonia || '',
+        localidad: datosEdicion.domicilioFiscal?.localidad || '',
+        municipio: datosEdicion.domicilioFiscal?.municipio || '',
+        estado: datosEdicion.domicilioFiscal?.estado || '',
+        pais: datosEdicion.domicilioFiscal?.pais || 'México'
+      }
+    });
+
+    // Si hay regímenes fiscales en los datos de edición, cargarlos
+    if (datosEdicion.regimenesFiscales && datosEdicion.regimenesFiscales.length > 0) {
+      const regimenesSeleccionados: SelectedRegimen[] = datosEdicion.regimenesFiscales.map((regimen: any) => ({
+        id_regimen: regimen.id_regimen,
+        fecha_inicio_regimen: regimen.fecha_inicio_regimen || datosEdicion.fecha_inicio_op || new Date().toISOString().split('T')[0],
+        predeterminado: regimen.predeterminado || false,
+        usosCfdi: regimen.usosCfdi?.map((uso: any) => ({
+          uso_cfdi: uso.uso_cfdi,
+          predeterminado: uso.predeterminado
+        })) || []
+      }));
+      setSelectedRegimens(regimenesSeleccionados);
+    }
+
+    
+  };
+
   // ========== CARGA AUTOMÁTICA DESDE ARCHIVO CSF ==========
   useEffect(() => {
     const loadCSFData = async () => {
-      if (params.fiscalData && !autoLoaded) {
+      if (params.fiscalData && !autoLoaded && modo === 'creacion') {
         try {
           setLoadingCSF(true);
           const fiscalData = JSON.parse(params.fiscalData as string);
@@ -313,7 +369,7 @@ export default function FormDatosFiscalesCompleto() {
           setAutoLoaded(true);
 
         } catch (error) {
-          console.error("Error al cargar datos CSF:", error);
+          
           Alert.alert(
             "Error al cargar datos",
             "No se pudieron cargar los datos del archivo CSF. Por favor, ingresa los datos manualmente.",
@@ -335,7 +391,6 @@ export default function FormDatosFiscalesCompleto() {
 
   // ========== FUNCIÓN PARA AUTOLLENAR FORMULARIO DESDE ARCHIVO ==========
   const autoFillFormData = (apiData: any) => {
-
     // La estructura puede variar, así que manejemos diferentes casos
     const data = apiData.data || apiData;
 
@@ -419,7 +474,7 @@ export default function FormDatosFiscalesCompleto() {
   };
 
   const validateAddress = (address: string): string | null => {
-    if (address.length < 3) return "La dirección debe tener al menos 3 caracteres";
+    if (address.length < 2) return "La dirección debe tener al menos 2 caracteres";
     return null;
   };
 
@@ -535,7 +590,7 @@ export default function FormDatosFiscalesCompleto() {
             regimensData = parsedData;
           }
         } catch (parseError) {
-          console.error('Error parseando JSON:', parseError);
+          
         }
       }
       else if (response.data && Array.isArray(response.data)) {
@@ -548,7 +603,7 @@ export default function FormDatosFiscalesCompleto() {
       setAvailableRegimens(regimensData);
 
     } catch (error) {
-      console.error('Error loading regimens:', error);
+      
       Alert.alert('Error', 'No se pudieron cargar los regímenes fiscales');
       setAvailableRegimens([]);
     } finally {
@@ -639,8 +694,12 @@ export default function FormDatosFiscalesCompleto() {
     if (!session || !session.IdUsuarioSST) {
       throw new Error('No hay sesión activa o el usuario no tiene ID');
     }
+
+    // ✅ NUEVO: Incluir ID si estamos en modo edición
+    const idReceptor = modo === 'edicion' && initialData ? initialData.id : null;
+
     const completeData = {
-      id: null,
+      id: idReceptor, // ✅ MODIFICADO: Incluir ID en edición
       id_usuario: session.IdUsuarioSST,
       rfc: thirdPartyData.rfc,
       curp: thirdPartyData.curp,
@@ -689,7 +748,6 @@ export default function FormDatosFiscalesCompleto() {
         usosCfdi: regimen.usosCfdi || []
       }))
     };
-
     return completeData;
   };
 
@@ -701,6 +759,7 @@ export default function FormDatosFiscalesCompleto() {
     try {
       const completeData = buildCompleteJSON();
 
+      // ✅ MODIFICADO: Mensaje dinámico según modo
       const response = await requests.post({
         command: DATOS_FISCALES_CREATE,
         data: completeData,
@@ -709,14 +768,26 @@ export default function FormDatosFiscalesCompleto() {
       const { data } = response;
 
       if (data.success) {
-        // Cambiar al step de éxito en lugar del Alert
-        setCurrentStep('exito');
+        // ✅ MODIFICADO: Mensaje de éxito dinámico
+        Alert.alert(
+          '¡Éxito!', 
+          modo === 'edicion' ? 'Receptor actualizado correctamente' : 'Receptor registrado exitosamente',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Redirigir al dashboard o gestión de receptores
+                router.push('/dashboard');
+              }
+            }
+          ]
+        );
       } else {
         throw new Error(data.message || 'Error en la respuesta del servidor');
       }
 
     } catch (error: any) {
-      console.error('Error al enviar datos:', error);
+      
       Alert.alert('Error', 'No se pudo completar el registro fiscal');
     } finally {
       setInternalLoading(false);
@@ -941,9 +1012,9 @@ export default function FormDatosFiscalesCompleto() {
         </View>
 
         <Text style={styles.headerTitle}>
-          {currentStep === 'datos' ? 'Datos Fiscales del Tercero' :
-            currentStep === 'regimenes' ? 'Regímenes Fiscales' :
-              'Registro Exitoso'}
+          {modo === 'edicion' ? 'Editar Receptor' : 'Datos Fiscales del Tercero'}
+          {currentStep === 'regimenes' ? ' - Regímenes Fiscales' : 
+           currentStep === 'exito' ? ' - Registro Exitoso' : ''}
         </Text>
 
         {/* Mostrar loading mientras se procesa el CSF */}
@@ -959,8 +1030,33 @@ export default function FormDatosFiscalesCompleto() {
         {/* STEP 1: DATOS FISCALES */}
         {currentStep === 'datos' && (
           <>
+            {/* ✅ MODIFICADO: Mostrar información de edición */}
+            {modo === 'edicion' && (
+              <View style={styles.card}>
+                <View style={styles.sectionHeader}>
+                  <FileText size={20} color="#1A2A6C" />
+                  <Text style={styles.sectionTitle}>Editando Receptor</Text>
+                </View>
+
+                <Text style={styles.uploadDescription}>
+                  Estás editando el receptor existente. Modifica los datos necesarios y guarda los cambios.
+                </Text>
+
+                <View style={styles.infoContainer}>
+                  <Text style={styles.infoText}>
+                    <Text style={styles.infoLabel}>RFC: </Text>
+                    {thirdPartyData.rfc || 'No disponible'}
+                  </Text>
+                  <Text style={styles.infoText}>
+                    <Text style={styles.infoLabel}>Nombre: </Text>
+                    {thirdPartyData.nombre_razon || 'No disponible'}
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {/* Sección informativa de datos cargados desde CSF */}
-            {autoLoaded && (
+            {autoLoaded && modo === 'creacion' && (
               <View style={styles.card}>
                 <View style={styles.sectionHeader}>
                   <FileText size={20} color="#10B981" />
@@ -1259,7 +1355,9 @@ export default function FormDatosFiscalesCompleto() {
             <View style={styles.card}>
               <View style={styles.sectionHeader}>
                 <FileText size={20} color="#1A2A6C" />
-                <Text style={styles.sectionTitle}>Información del Tercero</Text>
+                <Text style={styles.sectionTitle}>
+                  {modo === 'edicion' ? 'Editando Receptor' : 'Información del Tercero'}
+                </Text>
               </View>
               <View style={styles.infoContainer}>
                 <Text style={styles.infoText}>
@@ -1297,6 +1395,67 @@ export default function FormDatosFiscalesCompleto() {
               {renderRegimenList()}
             </View>
 
+            {/* ✅ NUEVA SECCIÓN: Información Adicional */}
+            <View style={styles.card}>
+              <View style={styles.sectionHeader}>
+                <FileText size={20} color="#1A2A6C" />
+                <Text style={styles.sectionTitle}>Información Adicional</Text>
+              </View>
+
+              <View style={styles.formGrid}>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Fecha Inicio de Operaciones</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={thirdPartyData.fecha_inicio_op}
+                    onChangeText={(text) => setThirdPartyData(prev => ({ ...prev, fecha_inicio_op: text }))}
+                    placeholder="YYYY-MM-DD"
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>ID CIF</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={thirdPartyData.idCIF}
+                    onChangeText={(text) => setThirdPartyData(prev => ({ ...prev, idCIF: text }))}
+                    maxLength={13}
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Lugar de Emisión</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={thirdPartyData.lugar_emision}
+                    onChangeText={(text) => setThirdPartyData(prev => ({ ...prev, lugar_emision: text }))}
+                    maxLength={200}
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Fecha de Emisión</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={thirdPartyData.fecha_emision}
+                    onChangeText={(text) => setThirdPartyData(prev => ({ ...prev, fecha_emision: text }))}
+                    placeholder="YYYY-MM-DD"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.checkboxContainer}>
+                <Checkbox.Android
+                  status={thirdPartyData.predeterminado ? 'checked' : 'unchecked'}
+                  onPress={() => setThirdPartyData(prev => ({ ...prev, predeterminado: !prev.predeterminado }))}
+                  color="#1A2A6C"
+                />
+                <Text style={styles.checkboxLabel}>
+                  Configurar como registro predeterminado
+                </Text>
+              </View>
+            </View>
+
             {/* Botones Step 2 */}
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
@@ -1315,7 +1474,9 @@ export default function FormDatosFiscalesCompleto() {
                 {currentLoading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.primaryButtonText}>Finalizar Registro</Text>
+                  <Text style={styles.primaryButtonText}>
+                    {modo === 'edicion' ? 'Actualizar Receptor' : 'Finalizar Registro'}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1605,9 +1766,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 4,
-    padding: 6,
+    padding: 2,
     fontSize: 12,
-    minWidth: 100,
+    minWidth: 62,
     textAlign: 'center',
   },
   usosSection: {

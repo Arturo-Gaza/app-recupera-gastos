@@ -1,5 +1,5 @@
 import { useSession } from "@/src/hooks/useSession";
-import { DATOS_FISCALES_TERCEROS_GETBYID } from "@/src/services/apiConstans";
+import { DATOS_FISCALES_GET_BY_ID, DATOS_FISCALES_TERCEROS_GETBYID } from "@/src/services/apiConstans";
 import requests from "@/src/services/requests";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -93,6 +93,34 @@ export default function RecipientsManagement() {
         ]);
     };
 
+    const handleUpdate = async (id: string) => {
+        console.log("el id para actualizar", id)
+        try {
+            const response = await requests.get({
+                command: DATOS_FISCALES_GET_BY_ID + id
+            });
+
+            console.log("los datos para actualizar el receptor", response.data)
+
+            // ✅ Navegar al formulario con los datos obtenidos
+            if (response.data.success) {
+                router.push({
+                    pathname: '/FormDatosFiscalesScreen', // Ajusta la ruta si es diferente
+                    params: {
+                        initialData: JSON.stringify(response.data.data),
+                        modo: 'edicion'
+                    }
+                });
+            } else {
+                Alert.alert('Error', response.data.message || 'No se pudieron cargar los datos');
+            }
+
+        } catch (error) {
+            console.error('❌ Error al cargar datos para editar:', error);
+            Alert.alert('Error', 'No se pudieron cargar los datos del receptor');
+        }
+    }
+
     if (loading) {
         return (
             <View style={styles.loaderContainer}>
@@ -152,8 +180,8 @@ export default function RecipientsManagement() {
                         <View style={styles.cardRow}>
                             <Text style={styles.label}>Predeterminado:</Text>
                             <View style={styles.checkboxContainer}>
-                                 <Text style={styles.checkboxLabel}>Predeterminado:  
-                                    
+                                <Text style={styles.checkboxLabel}>Predeterminado:
+
                                 </Text>
                                 <View style={[
                                     styles.checkbox,
@@ -163,7 +191,7 @@ export default function RecipientsManagement() {
                                         <Icon name="checkmark" size={14} color="#fff" />
                                     )}
                                 </View>
-                               
+
                             </View>
                         </View>
                         <View style={styles.cardRow}>
@@ -188,7 +216,7 @@ export default function RecipientsManagement() {
                                 <Icon name="eye-outline" size={20} color="#007AFF" />
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => Alert.alert("Editar", "Función de editar")}>
+                            <TouchableOpacity onPress={() => handleUpdate(item.id)}>
                                 <Icon name="create-outline" size={20} color="#666" />
                             </TouchableOpacity>
 
@@ -268,8 +296,8 @@ const styles = StyleSheet.create({
         marginVertical: 6,
         elevation: 2,
     },
-    cardRow: { 
-        flexDirection: "row", 
+    cardRow: {
+        flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 8,
@@ -332,9 +360,9 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         width: "80%",
     },
-    modalTitle: { 
-        fontSize: 18, 
-        fontWeight: "bold", 
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
         marginBottom: 15,
         textAlign: "center",
     },

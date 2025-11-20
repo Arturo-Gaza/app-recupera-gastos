@@ -36,24 +36,26 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
           throw new Error("No se pudo identificar al usuario");
         }
 
-        const validPaymentTypes = ["prepago", "mensual"];
+        const validPaymentTypes = ["prepago", "postpago"];
         if (!validPaymentTypes.includes(tipoPago)) {
           throw new Error(`Tipo de pago no válido: ${tipoPago}`);
         }
 
         // Configurar URL y body según tipo de pago
-        const url = tipoPago === "prepago"
-          ? "http://192.168.1.171:8000/api/stripe/crearPagoByPrepago"
-          : "http://192.168.1.171:8000/api/stripe/crearPagoByMensual";
+        const url =
+          tipoPago === "prepago"
+            ? "http://192.168.1.171:8000/api/stripe/crearPagoByPrepago"
+            : "http://192.168.1.171:8000/api/stripe/crearPagoByMensual"
 
-        const body = tipoPago === "prepago"
-          ? { 
-              idPrepago: parseInt(idRecarga), 
-              id_user: session.IdUsuarioSST 
+        const body =
+          tipoPago === "prepago"
+            ? {
+              idPrepago: parseInt(idRecarga),
+              id_user: session.IdUsuarioSST,
             }
-          : { 
-              id_plan: parseInt(idRecarga), 
-              id_user: session.IdUsuarioSST 
+            : {
+              id_plan: parseInt(idRecarga),
+              id_user: session.IdUsuarioSST,
             };
 
         console.log("Solicitando pago:", { url, body });
@@ -130,9 +132,9 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
       merchantIdentifier="merchant.com.example"
     >
       <View style={styles.container}>
-        <CheckoutForm 
-          clientSecret={clientSecret} 
-          //userEmail={session?.EmailSST} // Pasar email real del usuario
+        <CheckoutForm
+          clientSecret={clientSecret}
+        //userEmail={session?.EmailSST} // Pasar email real del usuario
         />
       </View>
     </StripeProvider>

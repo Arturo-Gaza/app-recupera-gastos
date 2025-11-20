@@ -71,7 +71,14 @@ export const TicketsTable = () => {
     const fetchTickets = async () => {
         try {
             setLoading(true);
-            const response = await requests.get({ command: USUARIO_GETBY_ID + userId });
+            const response = await requests.post({ 
+                command: USUARIO_GETBY_ID,
+                data: {
+                    fecha_inicio:"",
+                    fecha_fin: "",
+                    usuario_id: userId
+                } 
+            });
 
             const ticketsData = response.data?.data || [];
 

@@ -9,6 +9,9 @@ export default function DatosFiscalesScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
+  // ✅ NUEVO: Procesar datos de edición
+  const [initialData, setInitialData] = useState<any>(null);
+
   //Parseo seguro de fiscalData
   useEffect(() => {
     const fiscalDataParam = Array.isArray(params.fiscalData)
@@ -23,7 +26,22 @@ export default function DatosFiscalesScreen() {
         console.error('Error parseando fiscalData:', err);
       }
     }
-  }, [params.fiscalData]);
+
+    // ✅ NUEVO: Procesar initialData para edición
+    const initialDataParam = Array.isArray(params.initialData)
+      ? params.initialData[0]
+      : params.initialData;
+
+    if (initialDataParam) {
+      try {
+        const parsed = JSON.parse(initialDataParam as string);
+        setInitialData(parsed);
+        console.log('📦 Datos de edición recibidos:', parsed);
+      } catch (err) {
+        console.error('Error parseando initialData:', err);
+      }
+    }
+  }, [params.fiscalData, params.initialData]);
 
   //Función para enviar formulario
   const handleSubmit = async () => {
@@ -48,12 +66,14 @@ export default function DatosFiscalesScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'DatosFiscales',
+          title: initialData ? 'Editar Receptor' : 'Datos Fiscales', // ✅ Título dinámico
           headerShown: false,
         }}
       />
-      <FormDatosFiscalesCompleto/>
-
+      <FormDatosFiscalesCompleto 
+        initialData={initialData} // ✅ Pasar datos de edición al formulario
+        modo={initialData ? 'edicion' : 'creacion'} // ✅ Pasar modo
+      />
     </View>
   );
 }

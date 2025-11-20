@@ -25,7 +25,7 @@ interface PlanFromAPI {
     nombre_plan: string;
     descripcion_plan: string;
     tipo_plan: "personal" | "empresarial";
-    tipo_pago: "prepago" | "postpago";
+    tipo_pago: string;
     num_usuarios: string | null;
     num_facturas: number | null;
     vigencia_inicio: string;
@@ -67,11 +67,14 @@ const getPlanDescription = (plan: PlanFromAPI): string => {
     return plan.descripcion_plan;
 };
 
+
+
 // Funciones de API (mock para desarrollo)
 const GetAllPlanes = async (): Promise<ApiResponse> => {
     try {
         const response = await requests.get({ command: GET_ALL_PLANES });
         return response.data;
+        
     } catch (err) {
         return { success: false, data: [], data2: null, message: 'Error al obtener planes' };
     }
@@ -104,7 +107,9 @@ const Pricing: React.FC = () => {
             try {
                 setLoading(true);
                 const response = await GetAllPlanes();
+                console.log("que tipo de pago trae", response.data)
                 if (response.success && response.data) setPlans(response.data);
+                
                 else throw new Error(response.message);
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Error desconocido");
@@ -160,27 +165,29 @@ const Pricing: React.FC = () => {
         }
     }
     //funcion que manda a pantalla de recargas
-    const handleButtonClick = async (planId: string, planName: string) => {
-
+    const handleButtonClick = async (planId: string, tipoPago: string) => {
+        console.log("que tipo de pago es", tipoPago)
          setContenidoHooks((prev: any) => ({
       ...prev,
       IdPlan: planId,
     }));
         setSelectedPlan(planId);
-        if (planId === "1" || planId === "2" || planId === "3") {
+        if (tipoPago === "prepago") {
             router.push({
                 pathname: "/Recargas",
                 params: { planId }
             });
+        }else if (tipoPago === "postpago"){
+             router.push({
+            pathname: '/pagoStripe',
+            params: {
+                idRecarga: planId, 
+                tipoPago: 'postpago'
+            }
+        });
         }
         await handleActivarPlan(planId);
-        if (planName.toLowerCase().includes("prepago")) {
-            console.log("que trae planName", planName)
-            navigation.navigate('Recargas' as never);
-
-        } else {
-            //navigation.navigate('ResumenPago' as never, { planId } as never);
-        }
+       
     };
 
     const handleBackToLogin = () => {
@@ -269,7 +276,7 @@ const Pricing: React.FC = () => {
                                         price={Number(plan.precio)}
                                         features={getPlanFeatures(plan)}
                                         featured={isSelected}
-                                        onSelect={() => handleButtonClick(plan.id.toString(), plan.nombre_plan)}
+                                        onSelect={() => handleButtonClick(plan.id.toString(), plan.tipo_pago)}
                                         precios_vigentes={plan.precios_vigentes || []}
                                     />
                                 </View>

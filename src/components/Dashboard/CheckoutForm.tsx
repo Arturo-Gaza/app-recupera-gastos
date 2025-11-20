@@ -1,3 +1,5 @@
+import { useSession } from '@/src/hooks/useSession';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   initPaymentSheet,
   presentPaymentSheet
@@ -6,22 +8,25 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
 
+
+
 interface CheckoutFormProps {
   clientSecret: string;
   userEmail?: string;
 }
 
-type PaymentStatus = 
-  'idle' | 
-  'processing' | 
-  'succeeded' | 
-  'requires_action' | 
+type PaymentStatus =
+  'idle' |
+  'processing' |
+  'succeeded' |
+  'requires_action' |
   'failed';
 
 export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormProps) {
@@ -29,6 +34,10 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
+  const { refreshSession, updateSession } = useSession();
+
+
+
 
   // Inicializa la PaymentSheet
   useEffect(() => {
@@ -68,15 +77,15 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
 
     const { error } = await presentPaymentSheet();
 
+
+
     if (error) {
       setPaymentStatus('failed');
       setMessage(error.message || "El pago no se completó.");
       setLoading(false);
       return;
     }
-
     try {
-      // Confirmación backend igual que antes
       const paymentIntentId = clientSecret.split('_secret')[0];
 
       const confirmResponse = await fetch(
@@ -84,14 +93,40 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            payment_intent_id: paymentIntentId,
-          }),
+          body: JSON.stringify({ payment_intent_id: paymentIntentId }),
         }
       );
 
       const confirmData = await confirmResponse.json();
       console.log("Backend:", confirmData);
+
+      // -------------------------------------------
+      // ACTUALIZAR SESIÓN (versión completa)
+      // -------------------------------------------
+      if (confirmData?.success) {
+
+        await updateSession({
+          SaldoSST: confirmData.data.saldo_resultante,
+          TipoPagoSST: confirmData.data.tipo_pago,
+          tieneSuscripcionActivaSST: confirmData.data.is_subscription,
+          DatosCompletosSST: confirmData.data.datos_completos,
+          tienDatoFiscalSST: confirmData.data.datos_fiscales,
+          fecha_vencimiento: confirmData.data.fecha_vencimiento,
+          vigencia_saldo: confirmData.data.vigencia_saldo
+        });
+
+
+        console.log("Campos enviados a updateSession:", {
+          SaldoSST: confirmData.data.saldo_resultante,
+          TipoPagoSST: confirmData.data.tipo_pago,
+          IdPlanSST: confirmData.data.id_plan,
+        });
+
+
+      }
+      const nuevaSesion = await AsyncStorage.getItem("SesionSSTFull");
+      console.log("Sesión ACTUALIZADA en AsyncStorage:", nuevaSesion);
+
 
       setPaymentStatus('succeeded');
 
@@ -101,6 +136,8 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
     }
 
     setLoading(false);
+
+
   };
 
   // Pantalla de éxito
@@ -124,6 +161,13 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
 
   return (
     <View style={styles.container}>
+      <View style={[styles.card, styles.transparentCard]}>
+        <Image
+          source={require('@/assets/images/rg-logo.png')}
+          style={[styles.logo, styles.largeLogo]}
+          resizeMode="contain"
+        />
+      </View>
 
       {/* Header */}
       <View style={styles.header}>
@@ -140,7 +184,7 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
           <Text style={styles.sectionTitle}>Información de Pago</Text>
 
           {/* Botón que abre PaymentSheet */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.sheetButton}
             onPress={openPaymentSheet}
             activeOpacity={0.85}
@@ -175,9 +219,9 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 20, 
+  container: {
+    flex: 1,
+    padding: 20,
     backgroundColor: '#f6f9fc',
   },
 
@@ -196,6 +240,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 10,
     color: '#1e293b',
+    marginTop: 50
   },
 
   formCard: {
@@ -284,21 +329,54 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   successEmoji: { fontSize: 50, marginBottom: 10 },
-  successTitle: { 
-    fontSize: 22, 
+  successTitle: {
+    fontSize: 22,
     fontWeight: "700",
     color: "#2e7d32",
     marginBottom: 8,
   },
-  successText: { 
+  successText: {
     color: "#475569",
     fontSize: 15,
     textAlign: "center",
     marginBottom: 20,
   },
-  redirectText: { 
+  redirectText: {
     color: "#64748b",
     fontSize: 12,
     marginTop: 5,
+  },
+  //Estilo para el logo
+  transparentCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+    borderWidth: 0,
+    marginTop: 5,
+    alignSelf: "center",
+  },
+
+  logo: {
+    width: 200,
+    height: 100,
+    marginBottom: 30,
+    marginTop: 5,
+  },
+
+  largeLogo: {
+    width: 300 * 0.7,
+    height: 150 * 0.7,
+    marginBottom: 30,
+  },
+  card: {
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });

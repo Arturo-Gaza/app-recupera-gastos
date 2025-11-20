@@ -1,5 +1,5 @@
-import { useNavigation } from '@react-navigation/native';
-import { useEffect, useRef, useState } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -11,13 +11,12 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-//import PlanCardRecarga from './PlanCardRecarga';
+
 import { useSession } from '@/src/hooks/useSession';
 import { ACTIVAR_PLAN, GET_BY_ID_BASICOS } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { router } from 'expo-router';
 import PlanCardRecarga from '../Auth/PlanCardRecarga';
-
 
 // Interfaces
 interface PlanFeature {
@@ -42,9 +41,6 @@ interface ApiResponse {
     message: string;
 }
 
-
-
-// Componente principal
 const RecargasPersonales = () => {
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [plans, setPlans] = useState<PlanFromAPI[]>([]);
@@ -55,63 +51,47 @@ const RecargasPersonales = () => {
     const navigation = useNavigation();
     const { width: screenWidth } = Dimensions.get('window');
     const cardWidth = screenWidth * 0.8 + 20;
-    const { session, loading: sessionLoading } = useSession();
+
+    // Ahora usando refreshSession
+    const { session, loading: sessionLoading, refreshSession } = useSession();
 
     const idPlan = session?.IdPlanSST;
 
-    // Funciones de API
+    //Cargar planes usando el IdPlan actualizado
     const GetAllPlanesBasicos = async (idPlan?: number): Promise<ApiResponse> => {
         if (!idPlan) {
-
             return { success: false, data: [], data2: null, message: "idPlan no válido" };
         }
 
         try {
-
             const response = await requests.get({ command: GET_BY_ID_BASICOS + idPlan });
             return response.data;
         } catch (err) {
-
             return { success: false, data: [], data2: null, message: "Error al obtener planes básicos" };
         }
     };
-
-
 
     const getPlanFeatures = (plan: PlanFromAPI): PlanFeature[] => {
         return [];
     };
 
+    //Recarga los planes cuando cambia la sesión
     useEffect(() => {
         const fetchPlans = async () => {
-            // Evita ejecutar mientras se carga la sesión
-            if (sessionLoading) {
-
-                return;
-            }
-
-            // Verifica si el IdPlanSST existe
-            if (!session?.IdPlanSST) {
-
-                return;
-            }
+            if (sessionLoading) return;
+            if (!session?.IdPlanSST) return;
 
             try {
                 setLoading(true);
-                const idPlan = session.IdPlanSST;
-
-                const response: ApiResponse = await GetAllPlanesBasicos(idPlan);
+                const response: ApiResponse = await GetAllPlanesBasicos(session.IdPlanSST);
 
                 if (response.success && response.data) {
                     setPlans(response.data);
-
                 } else {
-
                     throw new Error(response.message || "Error al cargar los planes");
                 }
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Error desconocido");
-
             } finally {
                 setLoading(false);
             }
@@ -120,7 +100,12 @@ const RecargasPersonales = () => {
         fetchPlans();
     }, [session?.IdPlanSST, sessionLoading]);
 
-
+    // ESTA ES LA CLAVE: Actualizar sesión AL REGRESAR a esta pantalla
+    useFocusEffect(
+        useCallback(() => {
+            refreshSession(); // ← Aquí refrescamos inmediatamente tu sesión
+        }, [])
+    );
 
     const handleScroll = (event: any) => {
         const contentOffsetX = event.nativeEvent.contentOffset.x;
@@ -141,7 +126,6 @@ const RecargasPersonales = () => {
     };
 
     const handlePlanSelect = async (planId: string) => {
-        // Navegar a la pantalla de pago con el plan seleccionado
         router.push({
             pathname: '/pagoStripe',
             params: {
@@ -153,15 +137,12 @@ const RecargasPersonales = () => {
 
     const datosCompletos = session?.DatosCompletosSST;
 
-
     const handleOmitir = () => {
-
         if (datosCompletos !== true) {
             router.push('/datosAlert');
         } else {
             router.push('/dashboard');
         }
-
     };
 
     const handleActivarPlan = async (planId: string) => {
@@ -174,7 +155,6 @@ const RecargasPersonales = () => {
 
             if (data?.success) {
                 Alert.alert("Éxito", data.message);
-                // Lógica de éxito
                 return data;
             } else {
                 Alert.alert("Error", data?.message);
@@ -187,7 +167,7 @@ const RecargasPersonales = () => {
         } finally {
             setLoading(false);
         }
-    }
+    };
 
     if (loading) return (
         <SafeAreaView style={styles.loadingContainer}>
@@ -199,10 +179,7 @@ const RecargasPersonales = () => {
     if (error) return (
         <SafeAreaView style={styles.errorContainer}>
             <Text style={styles.errorText}>Error: {error}</Text>
-            <TouchableOpacity
-                style={styles.retryButton}
-            //onPress={() => window.location.reload()}
-            >
+            <TouchableOpacity style={styles.retryButton}>
                 <Text style={styles.retryButtonText}>Reintentar</Text>
             </TouchableOpacity>
         </SafeAreaView>
@@ -211,8 +188,6 @@ const RecargasPersonales = () => {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-
-                {/* Título */}
                 <View style={styles.header}>
                     <Text style={styles.title}>Recargas</Text>
                     <Text style={styles.subtitle}>
@@ -220,7 +195,6 @@ const RecargasPersonales = () => {
                     </Text>
                 </View>
 
-                {/* Carrusel de Planes */}
                 <View style={styles.carouselContainer}>
                     <ScrollView
                         ref={scrollViewRef}
@@ -264,25 +238,8 @@ const RecargasPersonales = () => {
                             );
                         })}
                     </ScrollView>
-
-                    {/* Indicadores de paginación */}
-                    {/* {plans.length > 1 && (
-                        <View style={styles.dotsContainer}>
-                            {plans.map((_, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={[
-                                        styles.dot,
-                                        currentIndex === index && styles.dotActive
-                                    ]}
-                                    onPress={() => handleDotPress(index)}
-                                />
-                            ))}
-                        </View>
-                    )} */}
                 </View>
 
-                {/* Información adicional */}
                 <View style={styles.infoContainer}>
                     <Text style={styles.infoText}>
                         Todos los precios incluyen IVA. Facturación disponible.
@@ -295,6 +252,7 @@ const RecargasPersonales = () => {
         </SafeAreaView>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {

@@ -109,21 +109,26 @@ export default function FiscalStep({
     ? JSON.parse(params.datosFiscales as string)
     : null;
 
+  //NUEVO: Procesar datos de edición
+  const datosEdicion = params.initialData 
+    ? JSON.parse(params.initialData as string)
+    : null;
+
   const [availableRegimens, setAvailableRegimens] = useState<RegimenFiscal[]>([]);
   const [selectedRegimens, setSelectedRegimens] = useState<SelectedRegimen[]>([]);
   const [loadingRegimens, setLoadingRegimens] = useState(true);
   const [expandedRegimen, setExpandedRegimen] = useState<number | null>(null);
   const [internalLoading, setInternalLoading] = useState(false);
   
-  // Datos adicionales - ahora con valores del formulario anterior
+  //MODIFICADO: Datos adicionales - ahora con valores de edición o creación
   const [fiscalData, setFiscalData] = useState({
-    fecha_inicio_op: datosFiscales?.fecha_inicio_op || '',
-    id_estatus_sat: datosFiscales?.id_estatus_sat || 1,
-    idCIF: '',
-    lugar_emision: datosFiscales?.lugar_emision || '',
-    fecha_emision: datosFiscales?.fecha_emision || '',
-    fecha_ult_cambio_op: '',
-    predeterminado: datosFiscales?.predeterminado || true
+    fecha_inicio_op: datosEdicion?.fecha_inicio_op || datosFiscales?.fecha_inicio_op || '',
+    id_estatus_sat: datosEdicion?.id_estatus_sat || datosFiscales?.id_estatus_sat || 1,
+    idCIF: datosEdicion?.idCIF || '',
+    lugar_emision: datosEdicion?.lugar_emision || datosFiscales?.lugar_emision || '',
+    fecha_emision: datosEdicion?.fecha_emision || datosFiscales?.fecha_emision || '',
+    fecha_ult_cambio_op: datosEdicion?.fecha_ult_cambio_op || '',
+    predeterminado: datosEdicion?.predeterminado ?? datosFiscales?.predeterminado ?? true
   } as {
     fecha_inicio_op: string;
     id_estatus_sat: number;
@@ -134,41 +139,79 @@ export default function FiscalStep({
     predeterminado: boolean;
   });
 
+  // NUEVA FUNCIÓN: Obtener datos del tercero (modo edición o creación)
+  const getDatosTercero = () => {
+    if (datosEdicion) {
+      // Devolver datos mapeados desde el JSON de la API
+      return {
+        es_persona_moral: datosEdicion.es_persona_moral,
+        nombre_razon: datosEdicion.nombre_razon,
+        primer_apellido: datosEdicion.primer_apellido || '',
+        segundo_apellido: datosEdicion.segundo_apellido || '',
+        nombre_comercial: datosEdicion.nombre_comercial || '',
+        rfc: datosEdicion.rfc,
+        curp: datosEdicion.curp || '',
+        email_facturacion_text: datosEdicion.email_facturacion_text,
+        fecha_inicio_op: datosEdicion.fecha_inicio_op,
+        fecha_emision: datosEdicion.fecha_emision,
+        lugar_emision: datosEdicion.lugar_emision,
+        id_estatus_sat: datosEdicion.id_estatus_sat,
+        predeterminado: datosEdicion.predeterminado,
+        domicilioFiscal: datosEdicion.domicilioFiscal || {}
+      };
+    }
+    return datosFiscales;
+  };
+
+  const datosTercero = getDatosTercero();
+
   // Loading combinado
   const currentLoading = loading || internalLoading;
 
-  // Cargar regímenes fiscales
+  //MODIFICADO: Cargar regímenes fiscales Y configurar los seleccionados si estamos editando
   useEffect(() => {
     loadRegimens();
+    
+    // Si estamos en modo edición, configurar los regímenes seleccionados
+    if (datosEdicion && datosEdicion.regimenesFiscales) {
+      configurarRegimenesEditados(datosEdicion.regimenesFiscales);
+    }
   }, []);
+
+  //NUEVA FUNCIÓN: Configurar regímenes cuando estamos editando
+  const configurarRegimenesEditados = (regimenesEditados: any[]) => {
+    const regimenesSeleccionados: SelectedRegimen[] = regimenesEditados.map(regimen => ({
+      id_regimen: regimen.id_regimen,
+      fecha_inicio_regimen: regimen.fecha_inicio_regimen,
+      predeterminado: regimen.predeterminado,
+      usosCfdi: regimen.usosCfdi?.map((uso: any) => ({
+        uso_cfdi: uso.uso_cfdi,
+        predeterminado: uso.predeterminado
+      })) || []
+    }));
+    
+    setSelectedRegimens(regimenesSeleccionados);
+  };
 
   const loadRegimens = async () => {
     try {
       setLoadingRegimens(true);
-      console.log('🔍 Cargando regímenes fiscales...');
       
       const response = await requests.get({ 
         command: CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN + false 
       });
       
-      console.log('📦 Respuesta completa de la API:', response);
+      
       
       let regimensData: RegimenFiscal[] = [];
       
-      // DEBUG: Ver la estructura real
-      console.log('🔍 DEBUG - Estructura de response:', {
-        tieneData: !!response.data,
-        tipoData: typeof response.data,
-        esArray: Array.isArray(response.data),
-        keys: response.data ? Object.keys(response.data) : 'no data'
-      });
 
       // Si response.data es un string (JSON stringificado)
       if (response.data && typeof response.data === 'string') {
-        console.log('✅ response.data es string, parseando...');
+        
         try {
           const parsedData = JSON.parse(response.data);
-          console.log('📊 Datos parseados:', parsedData);
+          
           
           if (parsedData.data && Array.isArray(parsedData.data)) {
             regimensData = parsedData.data;
@@ -176,33 +219,25 @@ export default function FiscalStep({
             regimensData = parsedData;
           }
         } catch (parseError) {
-          console.error('❌ Error parseando JSON:', parseError);
+          
         }
       }
       // Si response.data es directamente el array
       else if (response.data && Array.isArray(response.data)) {
-        console.log('✅ response.data es array directo');
+      
         regimensData = response.data;
       }
       // Si response.data es un objeto con propiedad data
       else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        console.log('✅ response.data.data es array');
+        
         regimensData = response.data.data;
       }
-      
-      console.log(`📈 Se encontraron ${regimensData.length} regímenes`);
-      
-      if (regimensData.length > 0) {
-        console.log('📋 Primer régimen:', regimensData[0]);
-      } else {
-        console.log('⚠️ No se encontraron regímenes');
-        console.log('🔍 Response.data completo:', response.data);
-      }
+    
       
       setAvailableRegimens(regimensData);
       
     } catch (error) {
-      console.error('❌ Error loading regimens:', error);
+      
       Alert.alert('Error', 'No se pudieron cargar los regímenes fiscales');
       setAvailableRegimens([]);
     } finally {
@@ -282,37 +317,40 @@ export default function FiscalStep({
     setExpandedRegimen(prev => prev === idRegimen ? null : idRegimen);
   };
 
-  // NUEVA FUNCIÓN: Construir el JSON completo
+  //MODIFICADO: Construir el JSON completo (ahora incluye ID en modo edición)
   const buildCompleteJSON = () => {
-    if (!datosFiscales) {
+    if (!datosTercero) {
       throw new Error('Faltan datos del formulario anterior');
     }
 
+    //NUEVO: Incluir ID si estamos en modo edición
+    const idReceptor = datosEdicion?.id || null;
+
     // Construir el objeto completo según tu estructura
     const completeData = {
-      id: null,
+      id: idReceptor, // ✅ MODIFICADO: Incluir ID en edición
       id_usuario: 4, // Ajusta según tu lógica de usuarios
-      rfc: datosFiscales.rfc,
-      curp: datosFiscales.curp,
+      rfc: datosTercero.rfc,
+      curp: datosTercero.curp,
       idCIF: fiscalData.idCIF,
-      es_persona_moral: datosFiscales.es_persona_moral,
-      nombre_razon: datosFiscales.nombre_razon,
-      primer_apellido: datosFiscales.primer_apellido,
-      segundo_apellido: datosFiscales.segundo_apellido,
-      nombre_comercial: datosFiscales.nombre_comercial,
-      email_facturacion_text: datosFiscales.email_facturacion_text,
+      es_persona_moral: datosTercero.es_persona_moral,
+      nombre_razon: datosTercero.nombre_razon,
+      primer_apellido: datosTercero.primer_apellido,
+      segundo_apellido: datosTercero.segundo_apellido,
+      nombre_comercial: datosTercero.nombre_comercial,
+      email_facturacion_text: datosTercero.email_facturacion_text,
       
       // Domicilio fiscal
       domicilioFiscal: {
-        calle: datosFiscales.domicilioFiscal?.calle || '',
-        num_exterior: datosFiscales.domicilioFiscal?.num_exterior || '',
-        num_interior: datosFiscales.domicilioFiscal?.num_interior || null,
-        codigo_postal: datosFiscales.domicilioFiscal?.codigo_postal || '',
-        colonia: datosFiscales.domicilioFiscal?.colonia || '',
-        localidad: datosFiscales.domicilioFiscal?.localidad || '',
-        municipio: datosFiscales.domicilioFiscal?.municipio || '',
-        estado: datosFiscales.domicilioFiscal?.estado || '',
-        pais: datosFiscales.domicilioFiscal?.pais || 'México'
+        calle: datosTercero.domicilioFiscal?.calle || '',
+        num_exterior: datosTercero.domicilioFiscal?.num_exterior || '',
+        num_interior: datosTercero.domicilioFiscal?.num_interior || null,
+        codigo_postal: datosTercero.domicilioFiscal?.codigo_postal || '',
+        colonia: datosTercero.domicilioFiscal?.colonia || '',
+        localidad: datosTercero.domicilioFiscal?.localidad || '',
+        municipio: datosTercero.domicilioFiscal?.municipio || '',
+        estado: datosTercero.domicilioFiscal?.estado || '',
+        pais: datosTercero.domicilioFiscal?.pais || 'México'
       },
       
       // Datos adicionales
@@ -340,7 +378,6 @@ export default function FiscalStep({
       }))
     };
 
-    console.log('📦 JSON completo construido:', completeData);
     return completeData;
   };
 
@@ -352,7 +389,7 @@ export default function FiscalStep({
       }
 
       // Validar que tenemos los datos del formulario anterior
-      if (!datosFiscales) {
+      if (!datosTercero) {
         Alert.alert('Error', 'No se encontraron los datos del formulario anterior');
         return;
       }
@@ -360,7 +397,7 @@ export default function FiscalStep({
       // Construir el JSON completo
       const completeData = buildCompleteJSON();
 
-      console.log('🚀 Enviando datos COMPLETOS a la API:', completeData);
+      
       
       // Si se pasó la prop onSubmit, la usamos
       if (onSubmit) {
@@ -377,12 +414,11 @@ export default function FiscalStep({
           });
 
           const { data } = response;
-          console.log('✅ Respuesta de la API:', data);
 
           if (data.success) {
             Alert.alert(
               '¡Éxito!', 
-              'Registro fiscal completado correctamente',
+              datosEdicion ? 'Receptor actualizado correctamente' : 'Registro fiscal completado correctamente',
               [
                 {
                   text: 'OK',
@@ -398,7 +434,7 @@ export default function FiscalStep({
           }
           
         } catch (error: any) {
-          console.error('❌ Error al enviar datos:', error);
+          
           Alert.alert('Error', 'No se pudo completar el registro fiscal');
         } finally {
           setInternalLoading(false);
@@ -406,7 +442,7 @@ export default function FiscalStep({
       }
 
     } catch (error: any) {
-      console.error('❌ Error al construir el JSON:', error);
+      
       Alert.alert('Error', error.message || 'Error al procesar los datos');
     }
   };
@@ -437,7 +473,7 @@ export default function FiscalStep({
             {regimen.descripcion}
           </Text>
           
-          <View style={styles.centerCell}>
+          <View style={styles.fechaInicioCell}>
             {isSelected && (
               <TextInput
                 style={styles.dateInput}
@@ -556,7 +592,7 @@ export default function FiscalStep({
           <Text style={[styles.tableHeaderCell, styles.centerCell]}>SEL.</Text>
           <Text style={[styles.tableHeaderCell, styles.centerCell]}>CÓD.</Text>
           <Text style={styles.tableHeaderCell}>RÉGIMEN FISCAL</Text>
-          <Text style={[styles.tableHeaderCell, styles.centerCell]}>FECHA INICIO</Text>
+          <Text style={[styles.tableHeaderCell, styles.fechaInicioCell]}>FECHA INICIO</Text>
           <Text style={[styles.tableHeaderCell, styles.centerCell]}>PRED.</Text>
         </View>
 
@@ -582,25 +618,27 @@ export default function FiscalStep({
         nestedScrollEnabled={true}
       >
         
-        {/* Información del Tercero (solo lectura) */}
-        {datosFiscales && (
+        {/* ✅ MODIFICADO: Información del Tercero (ahora muestra datos de edición o creación) */}
+        {datosTercero && (
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
               <FileText size={20} color="#1A2A6C" />
-              <Text style={styles.sectionTitle}>Información del Tercero</Text>
+              <Text style={styles.sectionTitle}>
+                {datosEdicion ? 'Editando Receptor' : 'Información del Tercero'}
+              </Text>
             </View>
             <View style={styles.infoContainer}>
               <Text style={styles.infoText}>
                 <Text style={styles.infoLabel}>RFC: </Text>
-                {datosFiscales.rfc}
+                {datosTercero.rfc}
               </Text>
               <Text style={styles.infoText}>
                 <Text style={styles.infoLabel}>Nombre: </Text>
-                {datosFiscales.nombre_razon} {datosFiscales.primer_apellido} {datosFiscales.segundo_apellido}
+                {datosTercero.nombre_razon} {datosTercero.primer_apellido} {datosTercero.segundo_apellido}
               </Text>
               <Text style={styles.infoText}>
                 <Text style={styles.infoLabel}>Email: </Text>
-                {datosFiscales.email_facturacion_text}
+                {datosTercero.email_facturacion_text}
               </Text>
             </View>
           </View>
@@ -637,7 +675,7 @@ export default function FiscalStep({
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Fecha Inicio de Operaciones</Text>
               <TextInput
-                style={styles.input}
+               style={[styles.input, styles.fechaInput]}
                 value={fiscalData.fecha_inicio_op}
                 onChangeText={(text) => setFiscalData(prev => ({ ...prev, fecha_inicio_op: text }))}
                 placeholder="YYYY-MM-DD"
@@ -726,7 +764,7 @@ export default function FiscalStep({
           </View>
         </View>
 
-        {/* Botones */}
+        {/* MODIFICADO: Botones (texto dinámico según modo) */}
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
             style={[styles.button, styles.outlineButton]}
@@ -744,7 +782,9 @@ export default function FiscalStep({
             {currentLoading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.primaryButtonText}>Finalizar Registro</Text>
+              <Text style={styles.primaryButtonText}>
+                {datosEdicion ? 'Actualizar Receptor' : 'Finalizar Registro'}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -919,7 +959,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     padding: 6,
     fontSize: 12,
-    minWidth: 100,
+    minWidth: 80,
     textAlign: 'center',
   },
   usosSection: {
@@ -965,6 +1005,7 @@ const styles = StyleSheet.create({
   },
   formGrid: {
     gap: 16,
+    backgroundColor: "red"
   },
   inputContainer: {
     gap: 4,
@@ -1069,5 +1110,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#fff',
+  },
+  fechaInput: {
+    height: 50,           // ← Altura específica
+    minHeight: 50,        // ← Altura mínima
+    fontSize: 18,         // ← Texto más grande
+    backgroundColor: '#f8f9fa', // ← Fondo diferente
+    borderColor: '#1A2A6C',     // ← Color del borde
+    borderWidth: 2,             // ← Borde más grueso
+  },
+  fechaInicioCell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 140, // ← ANCHO FIJO Y GRANDE
+    minWidth: 140,
+    paddingHorizontal: 5,
   },
 });

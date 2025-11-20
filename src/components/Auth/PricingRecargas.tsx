@@ -3,7 +3,7 @@ import { ACTIVAR_PLAN, GET_BY_ID_BASICOS } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { useNavigation } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, ArrowRight } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -110,18 +110,17 @@ const RecargasPersonales = () => {
         setSelectedPlan(planId);
     };
 
-    const handlePlanSelect = async (planId: string) => {
-        router.push('/pagoStripe');
-        try {
-            // Navegar a la pantalla de pago con el plan seleccionado
-            // navigation.navigate('PagoStripe' as never, { 
-            //     selectedPlan: planId,
-            //     planId: planId 
-            // } as never);
-        } catch (error) {
-            Alert.alert("Error", "No se pudo procesar la selección del plan");
-        }
+   const handlePlanSelect = async (planId: string) => {
+        // Navegar a la pantalla de pago con el plan seleccionado
+        router.push({
+            pathname: '/pagoStripe',
+            params: {
+                idRecarga: planId, 
+                tipoPago: 'prepago'
+            }
+        });
     };
+    
     const datosCompletos = session?.DatosCompletosSST;
     console.log("la sesion es ", datosCompletos)
 
@@ -193,14 +192,7 @@ const RecargasPersonales = () => {
                         <Text style={styles.backButtonText}>Volver a Planes</Text>
                     </TouchableOpacity>
 
-                    {/* Botón Omitir a la derecha */}
-                    <TouchableOpacity
-                        onPress={handleOmitir}
-                        style={styles.omitButton}
-                    >
-                        <Text style={styles.omitButtonText}>Omitir</Text>
-                        <ArrowRight size={16} color="#6b7280" />
-                    </TouchableOpacity>
+                   
                 </View>
                 <View style={[styles.card, styles.transparentCard]}>
                     <Image
@@ -217,6 +209,15 @@ const RecargasPersonales = () => {
                         Elige la recarga que mejor se adapte a tus necesidades personales.
                     </Text>
                 </View>
+
+                 {/* Botón Omitir a la derecha */}
+                    <TouchableOpacity
+                        onPress={handleOmitir}
+                        style={styles.omitButton}
+                    >
+                        <Text style={styles.omitButtonText}>Continuar con pruebas gratis</Text>
+                        
+                    </TouchableOpacity>
 
                 {/* Carrusel de Planes */}
                 <View style={styles.carouselContainer}>
@@ -475,9 +476,15 @@ const styles = StyleSheet.create({
         gap: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
+        backgroundColor: "#052756ff",
+        width: 210,
+        height: 40,
+        borderRadius: 4,
+        alignSelf: 'center'
+        
     },
     omitButtonText: {
-        color: '#6b7280',
+        color: '#ffffffff',
         fontSize: 16,
         fontWeight: '500',
     },

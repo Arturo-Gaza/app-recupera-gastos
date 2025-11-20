@@ -11,7 +11,8 @@ import {
   Users,
   Wallet
 } from "lucide-react-native";
-import { useState } from "react";
+
+import { useCallback, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -20,10 +21,12 @@ import {
   View
 } from "react-native";
 
-// Importar el DashboardTab adaptado
+import { useFocusEffect } from "@react-navigation/native";
+
 import { styles } from "@/src/styles/DashboardStyle";
-import { router } from 'expo-router';
-import { useSession } from '../../hooks/useSession';
+import { router } from "expo-router";
+import { useSession } from "../../hooks/useSession";
+
 import BalanceManagement from "./BalanceMagnaments";
 import { AccountManagement } from "./ConfiguracionCuenta";
 import { DashboardTab } from "./DashboardTab";
@@ -40,52 +43,66 @@ interface DashboardProps {
 export default function Dashboard({ onBack }: DashboardProps) {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("dashboard");
-  const { session, loading: sessionLoading } = useSession();
-  const [activeAccountSubSection, setActiveAccountSubSection] = useState("/account/block");
+  
 
+  //AHORA INCLUYE refreshSession
+  const { session, loading: sessionLoading, refreshSession } = useSession();
 
+  const [activeAccountSubSection, setActiveAccountSubSection] = useState(
+    "/account/block"
+  );
+  const [activeBalanceSubSection, setActiveBalanceSubSection] = useState(
+    "/balance/recharge"
+  );
 
-  const [currentDate] = useState(new Date().toLocaleDateString('es-MX', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }));
+  const [currentDate] = useState(
+    new Date().toLocaleDateString("es-MX", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    })
+  );
 
-  // Estado para controlar la subsección activa del balance
-  const [activeBalanceSubSection, setActiveBalanceSubSection] = useState<string>("/balance/recharge");
+  //Actualizar sesión cada vez que el Dashboard vuelve a ser visible
+  useFocusEffect(
+    useCallback(() => {
+      refreshSession(); 
+      console.log("⚡ Sesión recibida COMPLETA:", session);
+
+    }, [])
+  );
+
+  // Datos derivados de la sesión
+  const userName = session?.NombreSST || "Usuario";
+  const userBalance = session?.SaldoSST || "0.00";
+  const userRole = session?.RolSST || "Usuario";
+  const userEmail = session?.CorreoSST || "";
+  const userRoleId = session?.IdRolSST || "";
+  const userId = session?.IdUsuarioSST || 0;
 
   const handleLogout = () => {
-    router.push('/login')
+    router.push("/login");
   };
-
-  // Validar que session existe antes de usarlo
-  const userName = session?.NombreSST || 'Usuario';
-  const userBalance = session?.SaldoSST || "0.00";
-  const userRole = session?.RolSST || 'Usuario';
-  const userEmail = session?.CorreoSST || '';
-  const userRoleId = session?.IdRolSST || '';
-  const userId = session?.IdUsuarioSST || 0;
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+    
   };
 
-  // Función para manejar cuando los archivos se suben exitosamente
-  const handleFilesUploaded = (files: any[]) => {
-  };
+  const handleFilesUploaded = () => {};
 
+ 
   const Header = () => (
     <View style={styles.header}>
-      {/*aqui va el logo */}
-
       <View style={[styles.card, styles.transparentCard]}>
         <Image
-          source={require('@/assets/images/rg-logo.png')}
+          source={require("@/assets/images/rg-logo.png")}
           style={[styles.logo, styles.largeLogo]}
           resizeMode="contain"
         />
       </View>
+
       <TouchableOpacity
         style={styles.menuButton}
         onPress={() => setSidebarVisible(true)}
@@ -95,20 +112,15 @@ export default function Dashboard({ onBack }: DashboardProps) {
 
       <View style={styles.headerContent}>
         <View style={styles.headerText}>
-          <Text style={styles.title}>
-            ¡Hola, {userName}! 👋
-          </Text>
+          <Text style={styles.title}>¡Hola, {userName}! 👋</Text>
           <Text style={styles.date}>{currentDate}</Text>
         </View>
 
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.balanceButton}>
             <BadgeDollarSign size={16} color="#000" />
-            <Text style={styles.balanceText}>
-              Saldo: ${userBalance}
-            </Text>
+            <Text style={styles.balanceText}>Saldo: ${userBalance}</Text>
           </TouchableOpacity>
-
         </View>
       </View>
     </View>
@@ -125,8 +137,16 @@ export default function Dashboard({ onBack }: DashboardProps) {
           style={[styles.tab, activeTab === "dashboard" && styles.activeTab]}
           onPress={() => handleTabChange("dashboard")}
         >
-          <BarChart3 size={16} color={activeTab === "dashboard" ? "#fff" : "#666"} />
-          <Text style={[styles.tabText, activeTab === "dashboard" && styles.activeTabText]}>
+          <BarChart3
+            size={16}
+            color={activeTab === "dashboard" ? "#fff" : "#666"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "dashboard" && styles.activeTabText
+            ]}
+          >
             General
           </Text>
         </TouchableOpacity>
@@ -135,8 +155,16 @@ export default function Dashboard({ onBack }: DashboardProps) {
           style={[styles.tab, activeTab === "tickets" && styles.activeTab]}
           onPress={() => handleTabChange("tickets")}
         >
-          <FileText size={16} color={activeTab === "tickets" ? "#fff" : "#666"} />
-          <Text style={[styles.tabText, activeTab === "tickets" && styles.activeTabText]}>
+          <FileText
+            size={16}
+            color={activeTab === "tickets" ? "#fff" : "#666"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "tickets" && styles.activeTabText
+            ]}
+          >
             Tickets
           </Text>
         </TouchableOpacity>
@@ -145,8 +173,16 @@ export default function Dashboard({ onBack }: DashboardProps) {
           style={[styles.tab, activeTab === "carga" && styles.activeTab]}
           onPress={() => handleTabChange("carga")}
         >
-          <TrendingUp size={16} color={activeTab === "carga" ? "#fff" : "#666"} />
-          <Text style={[styles.tabText, activeTab === "carga" && styles.activeTabText]}>
+          <TrendingUp
+            size={16}
+            color={activeTab === "carga" ? "#fff" : "#666"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "carga" && styles.activeTabText
+            ]}
+          >
             Carga
           </Text>
         </TouchableOpacity>
@@ -154,7 +190,6 @@ export default function Dashboard({ onBack }: DashboardProps) {
     </View>
   );
 
-  // Componente para las subpestañas del balance
   const BalanceSubTabs = () => (
     <View style={styles.subTabsContainer}>
       <ScrollView
@@ -163,21 +198,51 @@ export default function Dashboard({ onBack }: DashboardProps) {
         contentContainerStyle={styles.subTabsContent}
       >
         <TouchableOpacity
-          style={[styles.subTab, activeBalanceSubSection === "/balance/recharge" && styles.activeSubTab]}
+          style={[
+            styles.subTab,
+            activeBalanceSubSection === "/balance/recharge" &&
+              styles.activeSubTab
+          ]}
           onPress={() => setActiveBalanceSubSection("/balance/recharge")}
         >
-          <CreditCard size={14} color={activeBalanceSubSection === "/balance/recharge" ? "#fff" : "#666"} />
-          <Text style={[styles.subTabText, activeBalanceSubSection === "/balance/recharge" && styles.activeSubTabText]}>
+          <CreditCard
+            size={14}
+            color={
+              activeBalanceSubSection === "/balance/recharge" ? "#fff" : "#666"
+            }
+          />
+          <Text
+            style={[
+              styles.subTabText,
+              activeBalanceSubSection === "/balance/recharge" &&
+                styles.activeSubTabText
+            ]}
+          >
             Recargar
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.subTab, activeBalanceSubSection === "/balance/statement" && styles.activeSubTab]}
+          style={[
+            styles.subTab,
+            activeBalanceSubSection === "/balance/statement" &&
+              styles.activeSubTab
+          ]}
           onPress={() => setActiveBalanceSubSection("/balance/statement")}
         >
-          <FileText size={14} color={activeBalanceSubSection === "/balance/statement" ? "#fff" : "#666"} />
-          <Text style={[styles.subTabText, activeBalanceSubSection === "/balance/statement" && styles.activeSubTabText]}>
+          <FileText
+            size={14}
+            color={
+              activeBalanceSubSection === "/balance/statement" ? "#fff" : "#666"
+            }
+          />
+          <Text
+            style={[
+              styles.subTabText,
+              activeBalanceSubSection === "/balance/statement" &&
+                styles.activeSubTabText
+            ]}
+          >
             Estado de Cuenta
           </Text>
         </TouchableOpacity>
@@ -186,14 +251,14 @@ export default function Dashboard({ onBack }: DashboardProps) {
   );
 
   const handleAccountBack = () => {
-    setActiveTab("dashboard"); // o la pestaña que quieras
+    setActiveTab("dashboard");
   };
-
 
   const renderTabContent = () => {
     switch (activeTab) {
       case "dashboard":
         return <DashboardTab />;
+
       case "balance":
         return (
           <View style={styles.balanceContainer}>
@@ -201,14 +266,19 @@ export default function Dashboard({ onBack }: DashboardProps) {
             <BalanceManagement activeSubSection={activeBalanceSubSection} />
           </View>
         );
+
       case "tickets":
         return <TicketsTable />;
+
       case "datos":
-        return <PersonalDataManagement />
+        return <PersonalDataManagement />;
+
       case "receptor":
-        return <RecipientsManagement />
+        return <RecipientsManagement />;
+
       case "colaborador":
-        return <UsersManagement />
+        return <UsersManagement />;
+
       case "cuenta":
         return (
           <AccountManagement
@@ -228,6 +298,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
             />
           </View>
         );
+
       default:
         return <DashboardTab />;
     }
@@ -245,14 +316,19 @@ export default function Dashboard({ onBack }: DashboardProps) {
           <View style={styles.sidebar}>
             <View style={styles.sidebarHeader}>
               <Text style={styles.sidebarTitle}>Menú</Text>
-              <TouchableOpacity onPress={() => setSidebarVisible(false)}>
+              <TouchableOpacity
+                onPress={() => setSidebarVisible(false)}
+              >
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.sidebarContent}>
               <TouchableOpacity
-                style={[styles.sidebarItem, activeTab === "dashboard" && styles.activeSidebarItem]}
+                style={[
+                  styles.sidebarItem,
+                  activeTab === "dashboard" && styles.activeSidebarItem
+                ]}
                 onPress={() => {
                   handleTabChange("dashboard");
                   setSidebarVisible(false);
@@ -263,7 +339,10 @@ export default function Dashboard({ onBack }: DashboardProps) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.sidebarItem, activeTab === "balance" && styles.activeSidebarItem]}
+                style={[
+                  styles.sidebarItem,
+                  activeTab === "balance" && styles.activeSidebarItem
+                ]}
                 onPress={() => {
                   handleTabChange("balance");
                   setActiveBalanceSubSection("/balance/recharge");
@@ -271,31 +350,48 @@ export default function Dashboard({ onBack }: DashboardProps) {
                 }}
               >
                 <Wallet size={20} color="#10b981" />
-                <Text style={styles.sidebarItemText}>Recargar y consultar saldo</Text>
+                <Text style={styles.sidebarItemText}>
+                  Recargar y consultar saldo
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.sidebarItem, activeTab === "datos" && styles.activeSidebarItem]}
+                style={[
+                  styles.sidebarItem,
+                  activeTab === "datos" && styles.activeSidebarItem
+                ]}
                 onPress={() => {
                   handleTabChange("datos");
                   setSidebarVisible(false);
                 }}
               >
                 <User size={20} color="#2706ffff" />
-                <Text style={styles.sidebarItemText}>Administrar mis datos personales</Text>
+                <Text style={styles.sidebarItemText}>
+                  Administrar mis datos personales
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.sidebarItem, activeTab === "receptor" && styles.activeSidebarItem]}
+                style={[
+                  styles.sidebarItem,
+                  activeTab === "receptor" && styles.activeSidebarItem
+                ]}
                 onPress={() => {
                   handleTabChange("receptor");
                   setSidebarVisible(false);
-                }}>
+                }}
+              >
                 <UserCheck size={20} color="#000000ff" />
-                <Text style={styles.sidebarItemText}>Administrar mis receptores</Text>
+                <Text style={styles.sidebarItemText}>
+                  Administrar mis receptores
+                </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={[styles.sidebarItem, activeTab === "cuenta" && styles.activeSidebarItem]}
+                style={[
+                  styles.sidebarItem,
+                  activeTab === "cuenta" && styles.activeSidebarItem
+                ]}
                 onPress={() => {
                   handleTabChange("cuenta");
                   setSidebarVisible(false);
@@ -306,14 +402,19 @@ export default function Dashboard({ onBack }: DashboardProps) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.sidebarItem, activeTab === "colaborador" && styles.activeSidebarItem]}
+                style={[
+                  styles.sidebarItem,
+                  activeTab === "colaborador" && styles.activeSidebarItem
+                ]}
                 onPress={() => {
                   handleTabChange("colaborador");
                   setSidebarVisible(false);
                 }}
               >
                 <Users size={20} color="#2c0092ff" />
-                <Text style={styles.sidebarItemText}>Administrar mis usuarios</Text>
+                <Text style={styles.sidebarItemText}>
+                  Administrar mis usuarios
+                </Text>
               </TouchableOpacity>
 
               <View style={styles.sidebarDivider} />
@@ -335,10 +436,9 @@ export default function Dashboard({ onBack }: DashboardProps) {
     <View style={styles.container}>
       <Header />
 
-      {/* Mostrar NavigationTabs solo cuando NO esté en la pestaña balance */}
-
-      {activeTab !== "balance" && activeTab !== "cuenta" && <NavigationTabs />}
-
+      {activeTab !== "balance" && activeTab !== "cuenta" && (
+        <NavigationTabs />
+      )}
 
       {activeTab === "receptor" ? (
         renderTabContent()
@@ -355,4 +455,3 @@ export default function Dashboard({ onBack }: DashboardProps) {
     </View>
   );
 }
-

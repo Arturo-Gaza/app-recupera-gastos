@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#e5e7eb',
     },
     submitButton: {
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#1A2A6C'
     },
     buttonDisabled: {
         backgroundColor: '#9ca3af',

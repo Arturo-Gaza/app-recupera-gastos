@@ -59,7 +59,7 @@ const handleLogin = async (email: string, password: string, setLoading: (val: bo
         };
 
         // Guardar en AsyncStorage
-        console.log("el tipo pago", dataSST.TipoPagoSST)
+        console.log("respuesta al iniciar sesion",dataSST)
        
         await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(dataSST));
          

@@ -1,8 +1,7 @@
 // useSession.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-// Interface para la sesión basada en tu estructura
 interface UserSession {
   SesionSST: boolean;
   TokenSST: string;
@@ -12,40 +11,76 @@ interface UserSession {
   ApellidoMSST: string;
   CorreoSST: string;
   RolSST: string;
-  IdRolSST: string;
+  IdRolSST: number;                    // <-- antes string ❌
   TelefonoSST: string;
   IdDepartamentoSST: string;
   DepartamentoSST: string;
-  SaldoSST: string;
+  SaldoSST: number;                    // <-- antes string ❌
   DatosCompletosSST: boolean;
   tienDatoFiscalSST: boolean;
   Password_temporalSST: boolean;
   tieneSuscripcionActivaSST: boolean;
-  IdPlanSST: number;
-  TipoPagoSST: string | null; 
+  IdPlanSST: number | null;
+  TipoPagoSST: string | null;
+
+  // faltaban estos:
+  fecha_vencimiento?: string;
+  vigencia_saldo?: string;
 }
 
 export const useSession = () => {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadSession();
+  /**
+   * Cargar sesión desde AsyncStorage
+   */
+  const loadSession = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const sessionData = await AsyncStorage.getItem("SesionSSTFull");
+      const json = sessionData ? JSON.parse(sessionData) : null;
+
+      setSession(json);
+    } 
+    catch (error) {
+      console.error("Error al cargar sesión:", error);
+    } 
+    finally {
+      setLoading(false);
+    }
   }, []);
 
-  const loadSession = async () => {
+  useEffect(() => {
+    loadSession();
+  }, [loadSession]);
+
+  /**
+   * Actualizar la sesión (parcial o completa)
+   * y reflejar los cambios inmediatamente en la UI
+   */
+  const updateSession = async (newData: Partial<UserSession>) => {
     try {
-      const sessionData = await AsyncStorage.getItem("SesionSSTFull");
-      if (sessionData) {
-        setSession(JSON.parse(sessionData));
-      }
+      const existingData = await AsyncStorage.getItem("SesionSSTFull");
+      const parsed = existingData ? JSON.parse(existingData) : {};
+
+      // merge de los datos
+      const updated = { ...parsed, ...newData };
+
+      // guardar en storage
+      await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(updated));
+
+      // actualizar UI inmediatamente
+      setSession(updated);
     } catch (error) {
-      console.error("Error al cargar sesión:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error al actualizar sesión:", error);
     }
   };
 
+  /**
+   * Eliminar sesión
+   */
   const logout = async () => {
     try {
       await AsyncStorage.removeItem("SesionSSTFull");
@@ -59,6 +94,7 @@ export const useSession = () => {
     session,
     loading,
     logout,
-    refreshSession: loadSession
+    refreshSession: loadSession,
+    updateSession   // <-- aquí se expone el método nuevo
   };
 };
