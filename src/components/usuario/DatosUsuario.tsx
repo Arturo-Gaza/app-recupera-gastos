@@ -1,3 +1,4 @@
+import { useSession } from "@/src/hooks/useSession";
 import { USUARIO_FINAL_UPDATE } from "@/src/services/apiConstans";
 import requests from "@/src/services/requests";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -31,6 +32,7 @@ const validatePostalCode = (cp: string) =>
 export default function PersonalForm() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const { updateSession } = useSession();
   const [personalData, setPersonalData] = useState({
     nombre_razon: "",
     primer_apellido: "",
@@ -99,6 +101,13 @@ export default function PersonalForm() {
       const responseData = response.data;
 
       if (responseData?.success) {
+        await updateSession({
+          NombreSST: responseData.data.nombre || "",
+          ApellidoPSST: responseData.data.apellido_p || "",
+          ApellidoMSST: responseData.data.apellido_m || "",
+          TelefonoSST: responseData.data.telefono || "",
+          DatosCompletosSST: true, // si ya están completos los datos
+        });
         setStep(3); // ← mostrar step de éxito
       } else {
         Alert.alert("Error", responseData?.message || "No se pudo registrar la información.");
@@ -112,65 +121,65 @@ export default function PersonalForm() {
   };
 
   // --- Step de éxito
-const renderSuccessStep = () => (
-  <View style={styles.section}>
-    {/* Logo */}
+  const renderSuccessStep = () => (
+    <View style={styles.section}>
+      {/* Logo */}
       <Image
         source={require("@/assets/images/rg-logo.png")}
         style={[styles.logo2, styles.largeLogo2]}
         resizeMode="contain"
       />
-    <View style={[styles.card, { alignItems: "center", justifyContent: "center" }]}>
+      <View style={[styles.card, { alignItems: "center", justifyContent: "center" }]}>
 
-      {/* Icono */}
-      <Text style={{ fontSize: 50, color: "green", marginBottom: 16 }}>✓</Text>
+        {/* Icono */}
+        <Text style={{ fontSize: 50, color: "green", marginBottom: 16 }}>✓</Text>
 
-      <Text style={{ fontSize: 18, fontWeight: "bold", color: "green", marginBottom: 8 }}>
-        ¡Información Personal Guardada con Éxito!
-      </Text>
-      <Text style={{ fontSize: 14, color: "#666", marginBottom: 16, textAlign: "center" }}>
-        Tu información personal ha sido registrada.
-      </Text>
+        <Text style={{ fontSize: 18, fontWeight: "bold", color: "green", marginBottom: 8 }}>
+          ¡Información Personal Guardada con Éxito!
+        </Text>
+        <Text style={{ fontSize: 14, color: "#666", marginBottom: 16, textAlign: "center" }}>
+          Tu información personal ha sido registrada.
+        </Text>
 
-      {/* Datos registrados */}
-      <View style={{ backgroundColor: "#f0f0f0", padding: 12, borderRadius: 8, marginBottom: 16, width: "100%" }}>
-        <Text style={{ fontWeight: "600", marginBottom: 4 }}>Datos registrados:</Text>
-        <Text>• Nombre: {personalData.nombre_razon} {personalData.primer_apellido} {personalData.segundo_apellido}</Text>
-        <Text>• RFC: {personalData.rfc}</Text>
-        <Text>• Dirección: {personalData.direccion.calle} {personalData.direccion.num_exterior}</Text>
-      </View>
+        {/* Datos registrados */}
+        <View style={{ backgroundColor: "#f0f0f0", padding: 12, borderRadius: 8, marginBottom: 16, width: "100%" }}>
+          <Text style={{ fontWeight: "600", marginBottom: 4 }}>Datos registrados:</Text>
+          <Text>• Nombre: {personalData.nombre_razon} {personalData.primer_apellido} {personalData.segundo_apellido}</Text>
+          <Text>• RFC: {personalData.rfc}</Text>
+          <Text>• Dirección: {personalData.direccion.calle} {personalData.direccion.num_exterior}</Text>
+        </View>
 
-      {/* Botones según rol */}
-      {session && Number(session.IdRolSST) === 2 && (
-        <View style={{ flexDirection: "row", gap: 10, width: "100%" }}>
-          <TouchableOpacity
-            style={[styles.button, { flex: 1, backgroundColor: "#fff", borderWidth: 1, borderColor: "#1A2A6C" }]}
-           onPress={() => router.replace("/login")}
-          >
-            <Text style={{ color: "#1A2A6C", fontWeight: "bold" }}>Lo haré después</Text>
-          </TouchableOpacity>
+        {/* Botones según rol */}
+        {session && Number(session.IdRolSST) === 2 && (
+          <View style={{ flexDirection: "row", gap: 10, width: "100%" }}>
+            <TouchableOpacity
+              style={[styles.button, { flex: 1, backgroundColor: "#fff", borderWidth: 1, borderColor: "#1A2A6C" }]}
+              onPress={() => router.replace("/dashboard")}
+            >
+              <Text style={{ color: "#1A2A6C", fontWeight: "bold" }}>Lo haré después</Text>
+            </TouchableOpacity>
 
+            <TouchableOpacity
+              style={[styles.button, { flex: 1 }]}
+              onPress={() => router.push('/metodoRegistroFiscal')}
+              disabled={loading}
+            >
+              <Text style={{ color: "#FFF", fontWeight: "bold" }}>¡Completar Datos Fiscales Ahora!</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {session && Number(session.IdRolSST) === 3 && (
           <TouchableOpacity
             style={[styles.button, { flex: 1 }]}
-            onPress={() => router.push('/metodoRegistroFiscal')}
-            disabled={loading}
+            onPress={() => console.log("Continuar")}
           >
-            <Text style={{ color: "#FFF", fontWeight: "bold" }}>¡Completar Datos Fiscales Ahora!</Text>
+            <Text style={{ color: "#FFF", fontWeight: "bold" }}>Continuar</Text>
           </TouchableOpacity>
-        </View>
-      )}
-
-      {session && Number(session.IdRolSST) === 3 && (
-        <TouchableOpacity
-          style={[styles.button, { flex: 1 }]}
-          onPress={() => console.log("Continuar")}
-        >
-          <Text style={{ color: "#FFF", fontWeight: "bold" }}>Continuar</Text>
-        </TouchableOpacity>
-      )}
+        )}
+      </View>
     </View>
-  </View>
-);
+  );
 
 
   return (
@@ -351,62 +360,62 @@ const renderSuccessStep = () => (
 
 
 const styles = StyleSheet.create({
-  container: 
-  { 
-    flex: 1, 
-    padding: 16, 
-    backgroundColor: "#FFF" 
+  container:
+  {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#FFF"
   },
-  section: { 
-    marginBottom: 24 
+  section: {
+    marginBottom: 24
   },
-  sectionHeader: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    gap: 8, 
-    borderBottomWidth: 1, 
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderBottomWidth: 1,
     borderColor: "#E0E0E0",
-    paddingBottom: 8, 
+    paddingBottom: 8,
     marginBottom: 8
-   },
-  sectionTitle: { 
-    fontSize: 18, 
-    fontWeight: "600", 
-    color: "#007AFF" 
   },
-  field: { 
-    marginBottom: 12 
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#007AFF"
   },
-  label: { 
-    fontSize: 14, 
-    color: "#333", 
-    marginBottom: 4 
+  field: {
+    marginBottom: 12
   },
-  input: { 
-    borderWidth: 1, 
-    borderColor: "#CCC", 
-    borderRadius: 8, 
-    paddingHorizontal: 10, 
-    paddingVertical: 8, 
-    fontSize: 16 
+  label: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 4
   },
-  errorText: { 
-    fontSize: 12, 
-    color: "#E53935", 
-    marginTop: 4 
+  input: {
+    borderWidth: 1,
+    borderColor: "#CCC",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 16
   },
-  buttonContainer: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    gap: 10, 
-    marginBottom: 30 
+  errorText: {
+    fontSize: 12,
+    color: "#E53935",
+    marginTop: 4
   },
-  button: { 
-    flex: 1, 
-    backgroundColor: "#1A2A6C", 
-    borderRadius: 8, 
-    padding: 14, 
-    alignItems: "center" 
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 30
+  },
+  button: {
+    flex: 1,
+    backgroundColor: "#1A2A6C",
+    borderRadius: 8,
+    padding: 14,
+    alignItems: "center"
   },
   backButton: { flex: 1, backgroundColor: "#404040ff", borderRadius: 8, padding: 14, alignItems: "center" },
   buttonDisabled: { backgroundColor: "#A0A0A0" },

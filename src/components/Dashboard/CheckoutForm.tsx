@@ -1,5 +1,4 @@
 import { useSession } from '@/src/hooks/useSession';
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   initPaymentSheet,
   presentPaymentSheet
@@ -52,7 +51,7 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
 
       if (error) {
         setMessage("Error al inicializar formulario de pago.");
-        console.log("Stripe init error:", error);
+        
       }
     };
 
@@ -98,7 +97,7 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
       );
 
       const confirmData = await confirmResponse.json();
-      console.log("Backend:", confirmData);
+      
 
       // -------------------------------------------
       // ACTUALIZAR SESIÓN (versión completa)
@@ -115,19 +114,8 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
           vigencia_saldo: confirmData.data.vigencia_saldo
         });
 
-
-        console.log("Campos enviados a updateSession:", {
-          SaldoSST: confirmData.data.saldo_resultante,
-          TipoPagoSST: confirmData.data.tipo_pago,
-          IdPlanSST: confirmData.data.id_plan,
-        });
-
-
       }
-      const nuevaSesion = await AsyncStorage.getItem("SesionSSTFull");
-      console.log("Sesión ACTUALIZADA en AsyncStorage:", nuevaSesion);
-
-
+      
       setPaymentStatus('succeeded');
 
     } catch (err) {

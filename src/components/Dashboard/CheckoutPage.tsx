@@ -67,7 +67,6 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
         });
 
         const rawText = await res.text();
-        console.log("Respuesta del servidor:", rawText);
 
         let jsonData;
         try {

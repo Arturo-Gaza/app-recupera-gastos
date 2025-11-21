@@ -229,6 +229,7 @@ export function Register() {
     try {
       let formData = {
         "email": correo,
+        "lada": "52",
         "tel": telefono,
         "password": password
       };

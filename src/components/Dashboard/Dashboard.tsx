@@ -68,17 +68,13 @@ export default function Dashboard({ onBack }: DashboardProps) {
   useFocusEffect(
     useCallback(() => {
       refreshSession(); 
-      console.log("⚡ Sesión recibida COMPLETA:", session);
-
     }, [])
   );
 
   // Datos derivados de la sesión
-  const userName = session?.NombreSST || "Usuario";
+  const userName = session?.NombreSST;
   const userBalance = session?.SaldoSST || "0.00";
-  const userRole = session?.RolSST || "Usuario";
   const userEmail = session?.CorreoSST || "";
-  const userRoleId = session?.IdRolSST || "";
   const userId = session?.IdUsuarioSST || 0;
 
   const handleLogout = () => {

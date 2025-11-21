@@ -57,6 +57,7 @@ const RecargasPersonales = () => {
     const cardWidth = screenWidth * 0.8 + 20;
     const { planId } = useLocalSearchParams();
     const { session, loading: sessionLoading } = useSession();
+    const { updateSession } = useSession();
 
     // Funciones de API
     const GetAllPlanesBasicos = async (): Promise<ApiResponse> => {
@@ -65,6 +66,42 @@ const RecargasPersonales = () => {
             return response.data;
         } catch (err) {
             return { success: false, data: [], data2: null, message: 'Error al obtener planes básicos' };
+        }
+    };
+
+    const handleActivarPlan = async (planId: string) => {
+
+        
+        try {
+            const response = await requests.post({
+                command: ACTIVAR_PLAN + planId
+            });
+
+            const responseData = response.data;
+
+            if (responseData?.success) {
+
+                const idPlan = responseData.data?.suscripcion?.id_plan ?? null;
+                const tipoPago = responseData.data?.tipo_pago ?? null;
+
+                await updateSession({
+                    IdPlanSST: idPlan,
+                    TipoPagoSST: tipoPago,
+                    tieneSuscripcionActivaSST: true,
+                    DatosCompletosSST: true
+                });
+
+
+            } else {
+                Alert.alert("Error", responseData?.message);
+                return null;
+            }
+        } catch (error: any) {
+            console.error("Error:", error);
+            Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
+            return null;
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -110,21 +147,27 @@ const RecargasPersonales = () => {
         setSelectedPlan(planId);
     };
 
-   const handlePlanSelect = async (planId: string) => {
+    const handlePlanSelect = async (planId: string) => {
         // Navegar a la pantalla de pago con el plan seleccionado
         router.push({
             pathname: '/pagoStripe',
             params: {
-                idRecarga: planId, 
+                idRecarga: planId,
                 tipoPago: 'prepago'
             }
         });
     };
-    
-    const datosCompletos = session?.DatosCompletosSST;
-    console.log("la sesion es ", datosCompletos)
 
-    const handleOmitir = () => {
+    const datosCompletos = session?.DatosCompletosSST;
+
+
+    const handleOmitir = async () => {
+
+        if (!planId) {
+            console.log("No viene planId en los parámetros");
+        } else {
+            await handleActivarPlan(String(planId));
+        }
 
         if (datosCompletos !== true) {
             router.push('/datosAlert');
@@ -134,30 +177,7 @@ const RecargasPersonales = () => {
 
     };
 
-    const handleActivarPlan = async (planId: string) => {
-        try {
-            const response = await requests.post({
-                command: ACTIVAR_PLAN + planId
-            });
 
-            const { data } = response;
-
-            if (data?.success) {
-                Alert.alert("Éxito", data.message);
-                // Lógica de éxito
-                return data;
-            } else {
-                Alert.alert("Error", data?.message);
-                return null;
-            }
-        } catch (error: any) {
-            console.error("Error:", error);
-            Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
-            return null;
-        } finally {
-            setLoading(false);
-        }
-    }
 
     if (loading) return (
         <SafeAreaView style={styles.loadingContainer}>
@@ -192,7 +212,7 @@ const RecargasPersonales = () => {
                         <Text style={styles.backButtonText}>Volver a Planes</Text>
                     </TouchableOpacity>
 
-                   
+
                 </View>
                 <View style={[styles.card, styles.transparentCard]}>
                     <Image
@@ -210,14 +230,14 @@ const RecargasPersonales = () => {
                     </Text>
                 </View>
 
-                 {/* Botón Omitir a la derecha */}
-                    <TouchableOpacity
-                        onPress={handleOmitir}
-                        style={styles.omitButton}
-                    >
-                        <Text style={styles.omitButtonText}>Continuar con pruebas gratis</Text>
-                        
-                    </TouchableOpacity>
+                {/* Botón Omitir a la derecha */}
+                <TouchableOpacity
+                    onPress={handleOmitir}
+                    style={styles.omitButton}
+                >
+                    <Text style={styles.omitButtonText}>Continuar con pruebas gratis</Text>
+
+                </TouchableOpacity>
 
                 {/* Carrusel de Planes */}
                 <View style={styles.carouselContainer}>
@@ -481,7 +501,7 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 4,
         alignSelf: 'center'
-        
+
     },
     omitButtonText: {
         color: '#ffffffff',

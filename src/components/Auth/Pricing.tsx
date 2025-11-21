@@ -74,7 +74,7 @@ const GetAllPlanes = async (): Promise<ApiResponse> => {
     try {
         const response = await requests.get({ command: GET_ALL_PLANES });
         return response.data;
-        
+
     } catch (err) {
         return { success: false, data: [], data2: null, message: 'Error al obtener planes' };
     }
@@ -99,6 +99,7 @@ const Pricing: React.FC = () => {
     const cardWidth = screenWidth * 0.8 + 20;
     const [contenidoHooks, setContenidoHooks] = useState({});
     const { session, loading: sessionLoading } = useSession();
+    const { updateSession } = useSession();
 
 
     // Fetch planes
@@ -107,9 +108,9 @@ const Pricing: React.FC = () => {
             try {
                 setLoading(true);
                 const response = await GetAllPlanes();
-                console.log("que tipo de pago trae", response.data)
-                if (response.success && response.data) setPlans(response.data);
                 
+                if (response.success && response.data) setPlans(response.data);
+
                 else throw new Error(response.message);
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Error desconocido");
@@ -140,54 +141,32 @@ const Pricing: React.FC = () => {
         setCurrentIndex(0);
     };
 
-    const handleActivarPlan = async (planId: string) => {
-        try {
-            const response = await requests.post({
-                command: ACTIVAR_PLAN + planId
-            });
+   
 
-            const { data } = response;
-
-            if (data?.success) {
-                //Alert.alert("Éxito", data.message);
-                // Lógica de éxito
-                return data;
-            } else {
-                Alert.alert("Error", data?.message);
-                return null;
-            }
-        } catch (error: any) {
-            console.error("Error:", error);
-            Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
-            return null;
-        } finally {
-            setLoading(false);
-        }
-    }
     //funcion que manda a pantalla de recargas
     const handleButtonClick = async (planId: string, tipoPago: string) => {
-        console.log("que tipo de pago es", tipoPago)
-         setContenidoHooks((prev: any) => ({
-      ...prev,
-      IdPlan: planId,
-    }));
+
+        setContenidoHooks((prev: any) => ({
+            ...prev,
+            IdPlan: planId,
+        }));
         setSelectedPlan(planId);
         if (tipoPago === "prepago") {
             router.push({
                 pathname: "/Recargas",
                 params: { planId }
             });
-        }else if (tipoPago === "postpago"){
-             router.push({
-            pathname: '/pagoStripe',
-            params: {
-                idRecarga: planId, 
-                tipoPago: 'postpago'
-            }
-        });
+        } else if (tipoPago === "postpago") {
+            router.push({
+                pathname: '/pagoStripe',
+                params: {
+                    idRecarga: planId,
+                    tipoPago: 'postpago'
+                }
+            });
         }
-        await handleActivarPlan(planId);
-       
+
+
     };
 
     const handleBackToLogin = () => {
@@ -356,9 +335,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 40,
     },
-    planWrapper: 
-    { 
-         width: '90%',
+    planWrapper:
+    {
+        width: '90%',
     },
     planWrapperSelected: { transform: [{ scale: 1.05 }] },
     dotsContainer: {
