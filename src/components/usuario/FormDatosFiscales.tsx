@@ -756,7 +756,7 @@ export default function FormDatosFiscalesCompleto({
   // Handler para crear nuevo registro
   const handleCreate = async () => {
     setInternalLoading(true);
-    
+
     try {
       const completeData = buildCompleteJSON();
       const response = await requests.post({
@@ -773,7 +773,7 @@ export default function FormDatosFiscalesCompleto({
       } else {
         Alert.alert('Error', data.message || 'Error al crear el registro');
       }
-      
+
     } catch (error: any) {
       const message = error.response?.data?.message || 'Error de conexión al crear';
       Alert.alert('Error', message);
@@ -785,7 +785,7 @@ export default function FormDatosFiscalesCompleto({
   // Handler para actualizar registro existente
   const handleUpdate = async () => {
     setInternalLoading(true);
-    
+
     try {
       const completeData = buildCompleteJSON();
       const response = await requests.put({
@@ -799,12 +799,12 @@ export default function FormDatosFiscalesCompleto({
         Alert.alert('¡Éxito!', 'Receptor actualizado correctamente');
         // Opcional: navegar o limpiar formulario después del éxito
         // setCurrentStep('exito');
-        router.back(); 
-        
+        router.back();
+
       } else {
         Alert.alert('Error', data.message || 'Error al actualizar el registro');
       }
-      
+
     } catch (error: any) {
       const message = error.response?.data?.message || 'Error de conexión al actualizar';
       Alert.alert('Error', message);
@@ -819,10 +819,10 @@ export default function FormDatosFiscalesCompleto({
 
     if (modo === 'edicion') {
       await handleUpdate();
-      
+
     } else {
       await handleCreate();
-      
+
     }
   };
 
@@ -1280,19 +1280,34 @@ export default function FormDatosFiscalesCompleto({
                   {/* Email */}
                   <View style={styles.inputContainer}>
                     <Text style={styles.label}>Correo *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                      value={thirdPartyData.email_facturacion_text}
-                      onChangeText={(text) => setThirdPartyData(prev => ({
-                        ...prev,
-                        email_facturacion_text: text
-                      }))}
-                      placeholder="correo@ejemplo.com"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      editable={!currentLoading}
-                    />
+                    <View style={styles.emailRow}>
+                      <TextInput
+                        style={[styles.input, styles.emailInput]}
+                        placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                        value={thirdPartyData.email_facturacion_text}
+                        onChangeText={(text) => setThirdPartyData(prev => ({
+                          ...prev,
+                          email_facturacion_text: text
+                        }))}
+                        placeholder="correo@ejemplo.com"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        editable={!currentLoading}
+                      />
+                      <TouchableOpacity
+                        style={[
+                          styles.verifyButton,
+                          (!thirdPartyData.email_facturacion_text || !validateEmail(thirdPartyData.email_facturacion_text)) && styles.verifyButtonDisabled
+                        ]}
+                        onPress={() => {
+                          // Aquí va tu lógica de verificación
+                          console.log('Verificando email:', thirdPartyData.email_facturacion_text);
+                        }}
+                        disabled={!thirdPartyData.email_facturacion_text || !validateEmail(thirdPartyData.email_facturacion_text) || currentLoading}
+                      >
+                        <Text style={styles.verifyButtonText}>Verificar</Text>
+                      </TouchableOpacity>
+                    </View>
                     {thirdPartyData.email_facturacion_text && !validateEmail(thirdPartyData.email_facturacion_text) && (
                       <Text style={styles.errorText}>Formato de correo inválido</Text>
                     )}
@@ -1523,6 +1538,8 @@ export default function FormDatosFiscalesCompleto({
           />
         )}
       </ScrollView>
+
+      {/*Modal de c */}
     </View>
   );
 }
@@ -1850,5 +1867,31 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginBottom: 16,
     textAlign: 'center',
+  },
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  emailInput: {
+    flex: 1,
+  },
+  verifyButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifyButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+    opacity: 0.6,
+  },
+  verifyButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
