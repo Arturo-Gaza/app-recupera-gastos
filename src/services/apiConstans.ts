@@ -42,4 +42,5 @@ export const VALIDAR_CODIGO_ELIMINAR = 'usuario/validarCorreoEliminar'
 export const ELIMINAR_CUENTA = 'usuario/eliminar'
 export const BLOCKEAR_CUENTA = 'usuario/desHabilitar'
 export const DATOS_FISCALES_GET_BY_ID = 'datosFiscales/getById/'
-
+export const VERIFICAR_TELEFONO = 'usuario/enviarSMSConf'
+export const VALIDAR_CODIGO_SMS = 'usuario/validarSMSConf'

@@ -70,7 +70,6 @@ const RecargasPersonales = () => {
     };
 
     const handleActivarPlan = async (planId: string) => {
-
         
         try {
             const response = await requests.post({
@@ -90,7 +89,6 @@ const RecargasPersonales = () => {
                     tieneSuscripcionActivaSST: true,
                     DatosCompletosSST: true
                 });
-
 
             } else {
                 Alert.alert("Error", responseData?.message);

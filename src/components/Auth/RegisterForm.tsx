@@ -1,4 +1,4 @@
-import { ENVIARCORREOCONF, REGISTER, VALIDARCORREOCONF } from '@/src/services/apiConstans';
+import { ENVIARCORREOCONF, REGISTER, VALIDAR_CODIGO_SMS, VALIDARCORREOCONF, VERIFICAR_TELEFONO } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { styles } from '@/src/styles/RegisterStyles';
 import { Picker } from '@react-native-picker/picker';
@@ -122,14 +122,39 @@ export function Register() {
     }
   };
 
-  const handleSMSSubmit = () => {
+  const handleSMSSubmit = async () => {
     const code = otpSMS.join('');
-    if (code.length === 6) setCurrentStep('success');
+
+    try {
+      const response = await requests.post({
+        command: VALIDAR_CODIGO_SMS,
+        data: {
+          phone: telefono,
+          codigo: code
+        }
+      });
+
+      const { data } = response;
+
+      if (data?.success) {
+        Alert.alert("Éxito", data.message);
+        if (code.length === 6) setCurrentStep('success');
+      } else {
+        Alert.alert("Error", data?.message);
+        return null;
+      }
+
+    }
+    catch (error: any) {
+      console.error("Error:", error);
+      Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
+      return null;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResendCode = () => {
-    console.log('Código reenviado');
-  };
+  
 
   // FUNCIÓN OTP MEJORADA CON NAVEGACIÓN AUTOMÁTICA
   const handleOTPChange = (value: string, index: number, isEmail: boolean) => {
@@ -153,7 +178,7 @@ export function Register() {
   const handleKeyPress = (e: any, index: number, isEmail: boolean) => {
     if (e.nativeEvent.key === 'Backspace') {
       const currentOTP = isEmail ? otpEmail : otpSMS;
-      
+
       if (!currentOTP[index] && index > 0) {
         // Si el campo actual está vacío y se presiona backspace, ir al anterior
         const refs = isEmail ? emailInputRefs.current : smsInputRefs.current;
@@ -165,7 +190,7 @@ export function Register() {
   // Render OTP mejorado con navegación automática
   const renderOTPInput = (otp: string[], isEmail: boolean) => {
     const refs = isEmail ? emailInputRefs : smsInputRefs;
-    
+
     return (
       <View style={styles.otpContainer}>
         {otp.map((digit, index) => (
@@ -188,100 +213,185 @@ export function Register() {
     );
   };
 
-  //Funcion de registrar y enviar el correo
-  const handleRegisterSubmit = async () => {
-    // --- Validaciones ---
-    if (!telefono.trim()) {
-      Alert.alert("Error", "El teléfono es obligatorio");
-      return;
+  //Funcion de registrar y enviar el correo 
+  // ----------------------
+// VALIDACIÓN
+// ----------------------
+const validateForm = () => {
+  if (!telefono.trim()) {
+    Alert.alert("Error", "El teléfono es obligatorio");
+    return false;
+  }
+  if (telefono.length < 10) {
+    Alert.alert("Error", "El teléfono debe tener 10 dígitos");
+    return false;
+  }
+  if (!correo.trim()) {
+    Alert.alert("Error", "El correo electrónico es obligatorio");
+    return false;
+  }
+  if (!password.trim()) {
+    Alert.alert("Error", "La contraseña es obligatoria");
+    return false;
+  }
+  if (!confirmPassword.trim()) {
+    Alert.alert("Error", "Confirmar contraseña es obligatorio");
+    return false;
+  }
+  if (password !== confirmPassword) {
+    Alert.alert("Error", "Las contraseñas no coinciden");
+    return false;
+  }
+  if (!passwordValidation.isValid) {
+    Alert.alert(
+      "Contraseña inválida",
+      "La contraseña debe cumplir con todos los requisitos"
+    );
+    return false;
+  }
+  return true;
+};
+
+// ----------------------
+// FUNCIÓN: Enviar Correo
+// ----------------------
+const sendEmailVerification = async (correo: string) => {
+  try {
+    const emailResponse = await requests.post({
+      command: ENVIARCORREOCONF,
+      data: { email: correo },
+    });
+
+    const emailData = emailResponse.data;
+
+    if (emailData?.success) {
+      console.log("Correo enviado exitosamente");
+      return true;
+    } else {
+      console.warn("Respuesta inesperada del servidor:", emailData);
+      return false;
     }
-    if (telefono.length < 10) {
-      Alert.alert("Error", "El teléfono debe tener 10 dígitos");
-      return;
-    }
-    if (!correo.trim()) {
-      Alert.alert("Error", "El correo electrónico es obligatorio");
-      return;
-    }
-    if (!password.trim()) {
-      Alert.alert("Error", "La contraseña es obligatoria");
-      return;
-    }
-    if (!confirmPassword.trim()) {
-      Alert.alert("Error", "Confirmar contraseña es obligatorio");
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Las contraseñas no coinciden");
-      return;
-    }
-    if (!passwordValidation.isValid) {
+  } catch (error: any) {
+    console.error("Error detallado al enviar correo:", {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+
+    if (error.response?.status === 500) {
       Alert.alert(
-        "Contraseña inválida",
-        "La contraseña debe cumplir con todos los requisitos"
+        "Problema del servidor",
+        "Estamos teniendo problemas técnicos. Intenta verificar tu correo más tarde."
       );
-      return;
+    } else {
+      Alert.alert(
+        "Error al enviar correo",
+        "No pudimos enviar el correo de verificación. Intenta más tarde."
+      );
     }
 
-    setLoading(true);
+    return false;
+  }
+};
 
-    // --- Registro del usuario ---
-    try {
-      let formData = {
-        "email": correo,
-        "lada": "52",
-        "tel": telefono,
-        "password": password
-      };
+// ----------------------
+// FUNCIÓN: Enviar Teléfono (SMS)
+// ----------------------
+const sendPhoneVerification = async (telefono: string) => {
+  try {
+    const phoneResponse = await requests.post({
+      command: VERIFICAR_TELEFONO,
+      data: { phone: telefono },
+    });
 
-      const userRegister = await requests.post({
-        command: REGISTER,
-        data: formData,
-      });
+    const phoneData = phoneResponse.data;
 
-      const { data } = userRegister;
-
-      if (data?.success) {
-        try {
-          const emailResponse = await requests.post({
-            command: ENVIARCORREOCONF,
-            data: { email: correo },
-          });
-
-          const emailData = emailResponse.data;
-
-          if (emailData?.success) {
-            Alert.alert("¡Éxito!", emailData.message);
-            setCurrentStep("email");
-          } else {
-            Alert.alert("Error", emailData?.message || "Error al enviar correo");
-          }
-        } catch (emailError: any) {
-          console.error("Error al enviar correo:", emailError);
-          Alert.alert("Error", "Error al enviar el correo de confirmación");
-        }
-      } else {
-        Alert.alert("Error", data?.message || "Error en el registro");
-      }
-    } catch (error: any) {
-      console.error("Error en el registro:", error);
-
-      const errorMessage = error?.response?.data?.message;
-
-      // Mostrar modal personalizado para correo ya registrado
-      if (errorMessage?.includes("Correo existente")) {
-        setShowEmailRegisteredModal(true);
-      } else {
-        Alert.alert("Error", errorMessage || "Error de conexión");
-      }
-    } finally {
-      setLoading(false);
+    if (phoneData?.success) {
+      console.log("SMS enviado exitosamente");
+      return true;
+    } else {
+      console.warn("Respuesta inesperada del servidor SMS:", phoneData);
+      return false;
     }
+  } catch (error: any) {
+    console.warn(
+      "Error al enviar SMS (continuando flujo):",
+      error?.response?.data
+    );
+    return false; // No detiene flujo
+  }
+};
+
+// ----------------------
+// FUNCIÓN PRINCIPAL
+// ----------------------
+const handleRegisterSubmit = async () => {
+  if (!validateForm()) return;
+
+  setLoading(true);
+
+  try {
+    const formData = {
+      email: correo,
+      lada: "52",
+      tel: telefono,
+      password,
+    };
+
+    const userRegister = await requests.post({
+      command: REGISTER,
+      data: formData,
+    });
+
+    const { data } = userRegister;
+
+    if (data?.success) {
+      // ------ CORREO ------
+      await sendEmailVerification(correo);
+
+      // ------ TELÉFONO ------
+      await sendPhoneVerification(telefono);
+
+      // ------ AVANZAR ------
+      Alert.alert(
+        "¡Registro Exitoso!",
+        "Se ha enviado un código de verificación a tu correo electrónico."
+      );
+
+      setCurrentStep("email");
+    } else {
+      Alert.alert("Error", data?.message || "Error en el registro");
+    }
+  } catch (error: any) {
+    console.error("Error en el registro:", error);
+
+    const errorMessage = error?.response?.data?.message;
+
+    if (errorMessage?.includes("Correo existente")) {
+      setShowEmailRegisteredModal(true);
+    } else {
+      Alert.alert("Error", errorMessage || "Error de conexión");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleResendMail = async () => {
+  Alert.alert("Código enviado al correo", correo)
+     await sendEmailVerification(correo);
+     
   };
+
+  const handleResendSMS = async () => {
+    Alert.alert("Código enviado")
+     await sendPhoneVerification(telefono);
+  };
+
 
   //Formulario General
   const renderRegisterForm = () => (
-    
+
     <ScrollView contentContainerStyle={styles.formContainer}>
       <Text style={styles.label}>
         Teléfono <Text style={styles.required}>*</Text>
@@ -358,7 +468,7 @@ export function Register() {
       </View>
 
       {/* Validación de requisitos de contraseña */}
-     {password.length > 0 && !passwordValidation.isValid && (
+      {password.length > 0 && !passwordValidation.isValid && (
         <View style={styles.requirementsContainer}>
           <RequirementItem
             met={passwordValidation.hasMinLength}
@@ -440,7 +550,7 @@ export function Register() {
 
       {renderOTPInput(otpEmail, true)}
 
-      <TouchableOpacity onPress={handleResendCode} style={styles.linkButton}>
+      <TouchableOpacity onPress={handleResendMail} style={styles.linkButton}>
         <Text style={styles.linkText}>Reenviar código</Text>
       </TouchableOpacity>
 
@@ -468,7 +578,7 @@ export function Register() {
 
       {renderOTPInput(otpSMS, false)}
 
-      <TouchableOpacity onPress={handleResendCode} style={styles.linkButton}>
+      <TouchableOpacity onPress={handleResendSMS} style={styles.linkButton}>
         <Text style={styles.linkText}>Reenviar código</Text>
       </TouchableOpacity>
 
