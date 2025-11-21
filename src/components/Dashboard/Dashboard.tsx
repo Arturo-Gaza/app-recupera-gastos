@@ -43,7 +43,7 @@ interface DashboardProps {
 export default function Dashboard({ onBack }: DashboardProps) {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("dashboard");
-  
+
 
   //AHORA INCLUYE refreshSession
   const { session, loading: sessionLoading, refreshSession } = useSession();
@@ -67,28 +67,30 @@ export default function Dashboard({ onBack }: DashboardProps) {
   //Actualizar sesión cada vez que el Dashboard vuelve a ser visible
   useFocusEffect(
     useCallback(() => {
-      refreshSession(); 
+      refreshSession();
     }, [])
   );
 
   // Datos derivados de la sesión
   const userName = session?.NombreSST;
   const userBalance = session?.SaldoSST || "0.00";
+  const userVigencia = session?.FechaVeigenciaSST;
   const userEmail = session?.CorreoSST || "";
   const userId = session?.IdUsuarioSST || 0;
 
+  console.log("la vigencia es", userVigencia)
   const handleLogout = () => {
     router.push("/login");
   };
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    
+
   };
 
-  const handleFilesUploaded = () => {};
+  const handleFilesUploaded = () => { };
 
- 
+
   const Header = () => (
     <View style={styles.header}>
       <View style={[styles.card, styles.transparentCard]}>
@@ -115,7 +117,13 @@ export default function Dashboard({ onBack }: DashboardProps) {
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.balanceButton}>
             <BadgeDollarSign size={16} color="#000" />
-            <Text style={styles.balanceText}>Saldo: ${userBalance}</Text>
+            {session?.TipoPagoSST === 'prepago' ? (
+                <Text style={styles.balanceText}>Saldo: ${userBalance}</Text>
+                
+            ):(
+              <Text style={styles.balanceText}>Vigencia: {userVigencia}</Text>
+            )}
+
           </TouchableOpacity>
         </View>
       </View>
@@ -197,7 +205,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
           style={[
             styles.subTab,
             activeBalanceSubSection === "/balance/recharge" &&
-              styles.activeSubTab
+            styles.activeSubTab
           ]}
           onPress={() => setActiveBalanceSubSection("/balance/recharge")}
         >
@@ -211,7 +219,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
             style={[
               styles.subTabText,
               activeBalanceSubSection === "/balance/recharge" &&
-                styles.activeSubTabText
+              styles.activeSubTabText
             ]}
           >
             Recargar
@@ -222,7 +230,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
           style={[
             styles.subTab,
             activeBalanceSubSection === "/balance/statement" &&
-              styles.activeSubTab
+            styles.activeSubTab
           ]}
           onPress={() => setActiveBalanceSubSection("/balance/statement")}
         >
@@ -236,7 +244,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
             style={[
               styles.subTabText,
               activeBalanceSubSection === "/balance/statement" &&
-                styles.activeSubTabText
+              styles.activeSubTabText
             ]}
           >
             Estado de Cuenta

@@ -36,7 +36,7 @@ export default function DatosFiscalesScreen() {
       try {
         const parsed = JSON.parse(initialDataParam as string);
         setInitialData(parsed);
-        console.log('📦 Datos de edición recibidos:', parsed);
+        
       } catch (err) {
         console.error('Error parseando initialData:', err);
       }

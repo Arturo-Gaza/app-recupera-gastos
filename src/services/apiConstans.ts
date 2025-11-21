@@ -44,3 +44,11 @@ export const BLOCKEAR_CUENTA = 'usuario/desHabilitar'
 export const DATOS_FISCALES_GET_BY_ID = 'datosFiscales/getById/'
 export const VERIFICAR_TELEFONO = 'usuario/enviarSMSConf'
 export const VALIDAR_CODIGO_SMS = 'usuario/validarSMSConf'
+export const ENVIAR_SMS_RECU ='usuario/enviarSMSRec'
+export const VALIDAR_SMS_RECU ='usuario/validarSMSRec'
+export const GOOGLE_AUTH = "http://192.168.1.171:8000/auth/google";
+export const SERVIDOR = "http://192.168.1.171:8000";
+export const DATOS_FISCALES_DELETED = 'datosFiscales/eliminarReceptor/'
+export const VALIDARCANTIDADRFC = 'user/validarCantidadRFC'
+
+

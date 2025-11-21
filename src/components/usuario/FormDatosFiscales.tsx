@@ -769,7 +769,7 @@ export default function FormDatosFiscalesCompleto({
       if (data.success) {
         Alert.alert('¡Éxito!', 'Registro fiscal completado correctamente');
         // Opcional: navegar o limpiar formulario después del éxito
-        // setCurrentStep('exito');
+        router.push("/dashboard")
       } else {
         Alert.alert('Error', data.message || 'Error al crear el registro');
       }
@@ -819,10 +819,10 @@ export default function FormDatosFiscalesCompleto({
 
     if (modo === 'edicion') {
       await handleUpdate();
-      console.log("Estoy seleccionando el update")
+      
     } else {
       await handleCreate();
-      console.log("Estoy seleccionando el create")
+      
     }
   };
 

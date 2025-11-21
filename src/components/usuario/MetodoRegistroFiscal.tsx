@@ -24,7 +24,7 @@ export default function FiscalRegistrationMethod({
 
     const handleMethodSelect = (method: 'cfdi' | 'constancia' | 'manual') => {
     setLoading(true);
-    console.log('Método seleccionado:', method);
+    
     
     switch (method) {
       case 'constancia':

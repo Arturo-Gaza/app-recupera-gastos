@@ -424,7 +424,7 @@ export default function FiscalStep({
                   text: 'OK',
                   onPress: () => {
                     // Navegar a donde corresponda después del registro completo
-                    //router.push('/dashboard');
+                    router.push('/dashboard');
                   }
                 }
               ]

@@ -1,4 +1,4 @@
-import { CAMBIO_PASSWORD, RECUPERAPASS_CORREO, VALIDA_CODIGO } from '@/src/services/apiConstans';
+import { CAMBIO_PASSWORD, ENVIAR_SMS_RECU, RECUPERAPASS_CORREO, VALIDA_CODIGO, VALIDAR_SMS_RECU, } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { router } from 'expo-router';
 import { Eye, EyeOff } from 'lucide-react-native';
@@ -17,12 +17,11 @@ import {
   View
 } from 'react-native';
 
-
 interface ForgotPasswordFormProps {
   onBack?: () => void;
 }
 
-type Step = 'method' | 'email' | 'otp' | 'password';
+type Step = 'method' | 'email' | 'phone' | 'otp' | 'password';
 type VerificationMethod = 'email' | 'sms';
 
 // Iconos simples
@@ -57,11 +56,47 @@ const Button = ({ children, onPress, disabled, style, variant = 'default' }: any
   </TouchableOpacity>
 );
 
+// Componente PhoneInput
+const PhoneInput = ({ value, onChange, placeholder }: any) => {
+  const formatPhoneNumber = (text: string) => {
+    // Remover todos los caracteres no numéricos
+    const cleaned = text.replace(/\D/g, '');
+    
+    // Aplicar formato básico (puedes ajustar según tu país)
+    let formatted = cleaned;
+    if (cleaned.length > 3 && cleaned.length <= 6) {
+      formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+    } else if (cleaned.length > 6) {
+      formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+    }
+    
+    return formatted;
+  };
+
+  const handleChange = (text: string) => {
+    const formatted = formatPhoneNumber(text);
+    onChange(formatted);
+  };
+
+  return (
+    <TextInput
+      style={styles.input}
+      value={value}
+      onChangeText={handleChange}
+      placeholder={placeholder}
+      placeholderTextColor="rgba(0, 0, 0, 0.3)"
+      keyboardType="phone-pad"
+      autoCapitalize="none"
+      maxLength={14} // (123) 456-7890
+    />
+  );
+};
+
 // Componente PasswordInput MEJORADO
 const PasswordInput = ({ value, onChange, placeholder, showValidation = false }: any) => {
   const [showPassword, setShowPassword] = useState(false);
   
-  // Validación de contraseña (igual que en el componente anterior)
+  // Validación de contraseña
   const validatePassword = (pass: string) => {
     const hasMinLength = pass.length >= 8;
     const hasUpperCase = /[A-Z]/.test(pass);
@@ -96,10 +131,6 @@ const PasswordInput = ({ value, onChange, placeholder, showValidation = false }:
     </View>
   );
 
-    const handleBack = () => {
-    router.back();
-  };
-
   return (
     <View>
       <View style={styles.passwordContainer}>
@@ -128,7 +159,7 @@ const PasswordInput = ({ value, onChange, placeholder, showValidation = false }:
         </TouchableOpacity>
       </View>
 
-      {/* Validación de requisitos de contraseña (solo se muestra cuando showValidation es true) */}
+      {/* Validación de requisitos de contraseña */}
       {showValidation && value.length > 0 && !passwordValidation.isValid && (
         <View style={styles.requirementsContainer}>
           <RequirementItem
@@ -153,7 +184,7 @@ const PasswordInput = ({ value, onChange, placeholder, showValidation = false }:
   );
 };
 
-// Componente InputOTP CORREGIDO
+// Componente InputOTP
 const InputOTP = ({ length = 6, value, onChange }: any) => {
   const inputRefs = useRef<Array<TextInput>>([]);
 
@@ -162,7 +193,6 @@ const InputOTP = ({ length = 6, value, onChange }: any) => {
   };
 
   const handleChange = (text: string, index: number) => {
-    // Solo permitir números
     const numericText = text.replace(/[^0-9]/g, '');
     
     if (numericText) {
@@ -171,7 +201,6 @@ const InputOTP = ({ length = 6, value, onChange }: any) => {
       const combinedValue = newValue.join('');
       onChange(combinedValue);
 
-      // Auto-focus siguiente input
       if (index < length - 1) {
         focusInput(index + 1);
       }
@@ -181,13 +210,11 @@ const InputOTP = ({ length = 6, value, onChange }: any) => {
   const handleKeyPress = (e: any, index: number) => {
     if (e.nativeEvent.key === 'Backspace') {
       if (!value[index] && index > 0) {
-        // Si está vacío y presiona backspace, ir al anterior
         focusInput(index - 1);
       }
     }
   };
 
-  // Inicializar el array de referencias
   React.useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, length);
   }, [length]);
@@ -213,44 +240,6 @@ const InputOTP = ({ length = 6, value, onChange }: any) => {
           selectTextOnFocus
         />
       ))}
-    </View>
-  );
-};
-
-// Componente PasswordStrengthIndicator (mantenido para compatibilidad)
-const PasswordStrengthIndicator = ({ password }: any) => {
-  const getStrength = (pass: string) => {
-    if (!pass) return 0;
-    
-    let strength = 0;
-    if (pass.length >= 8) strength += 1;
-    if (/[A-Z]/.test(pass)) strength += 1;
-    if (/[0-9]/.test(pass)) strength += 1;
-    if (/[^A-Za-z0-9]/.test(pass)) strength += 1;
-    
-    return strength;
-  };
-
-  const strength = getStrength(password);
-  const strengthLabels = ['Muy débil', 'Débil', 'Regular', 'Fuerte', 'Muy fuerte'];
-  const strengthColors = ['#ff4444', '#ff8800', '#ffbb33', '#00C851', '#007E33'];
-
-  return (
-    <View style={styles.strengthContainer}>
-      <View style={styles.strengthBar}>
-        <View
-          style={[
-            styles.strengthFill,
-            {
-              width: `${(strength / 4) * 100}%`,
-              backgroundColor: strengthColors[strength],
-            },
-          ]}
-        />
-      </View>
-      <Text style={styles.strengthText}>
-        {strengthLabels[strength]}
-      </Text>
     </View>
   );
 };
@@ -311,6 +300,7 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
   const [currentStep, setCurrentStep] = useState<Step>('method');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [verificationMethod, setVerificationMethod] = useState<VerificationMethod>('email');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -324,7 +314,7 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
   const [successMessage, setSuccessMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Función de validación de contraseña (igual que en el componente anterior)
+  // Función de validación de contraseña
   const validatePassword = (pass: string) => {
     const hasMinLength = pass.length >= 8;
     const hasUpperCase = /[A-Z]/.test(pass);
@@ -347,18 +337,34 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
     return emailRegex.test(email);
   };
 
-  // flujo: method -> email -> otp -> password
+  const validatePhone = (phone: string) => {
+    // Validación básica de teléfono - ajusta según tus necesidades
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.length >= 10; // Mínimo 10 dígitos
+  };
+
+  // flujo: method -> email/phone -> otp -> password
   const handleMethodSubmit = async () => {
     setLoading(true);
     try {
-      setCurrentStep('email');
+      if (verificationMethod === 'email') {
+        setCurrentStep('email');
+      } else {
+        setCurrentStep('phone');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Lógica para validar correo
+  // Lógica para enviar código por email
   const handleEmailSubmit = async () => {
+    if (!validateEmail(email)) {
+      setErrorMessage('Por favor ingresa un correo electrónico válido');
+      setShowErrorModal(true);
+      return;
+    }
+
     setCurrentAction("password");
     setLoading(true);
 
@@ -395,17 +401,70 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
     }
   };
 
-  // Lógica para validar código
+  // Lógica para enviar código por SMS
+  const handlePhoneSubmit = async () => {
+    if (!validatePhone(phone)) {
+      setErrorMessage('Por favor ingresa un número de teléfono válido');
+      setShowErrorModal(true);
+      return;
+    }
+
+    setCurrentAction("sms");
+    setLoading(true);
+
+    try {
+      const response = await requests.post({
+        command: ENVIAR_SMS_RECU,
+        data: { telefono: phone.replace(/\D/g, '') }, // Enviar solo números
+      });
+
+      const result = response.data;
+
+      toast({
+        title: "SMS enviado",
+        description: result?.message || "Revisa tu teléfono para el código de verificación",
+      });
+
+      setCurrentStep("otp");
+    } catch (error: any) {
+      console.error("Error al enviar SMS:", error);
+
+      setErrorMessage(
+        error?.response?.data?.message ||
+        error.message ||
+        "No se pudo enviar el SMS, intenta de nuevo."
+      );
+      setErrorActions(
+        <Button onPress={() => setShowErrorModal(false)} style={styles.modalButton}>
+          Ok
+        </Button>
+      );
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lógica para validar código (tanto email como SMS)
   const handleOtpSubmit = async () => {
     if (!otp) return;
 
     setCurrentAction("validarCodigo");
     setLoading(true);
     try {
-      const response = await requests.post({
-        command: VALIDA_CODIGO,
-        data: { email, codigo: otp },
-      });
+      let response;
+      
+      if (verificationMethod === 'email') {
+        response = await requests.post({
+          command: VALIDA_CODIGO,
+          data: { email, codigo: otp },
+        });
+      } else {
+        response = await requests.post({
+          command: VALIDAR_SMS_RECU,
+          data: { telefono: phone.replace(/\D/g, ''), codigo: otp },
+        });
+      }
 
       const result = response.data;
       toast({
@@ -449,13 +508,21 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
     setLoading(true);
 
     try {
+      const requestData = verificationMethod === 'email' 
+        ? {
+            email: email,
+            codigo: otp,
+            nuevaPass: newPassword,
+          }
+        : {
+            telefono: phone.replace(/\D/g, ''),
+            codigo: otp,
+            nuevaPass: newPassword,
+          };
+
       const response = await requests.post({
         command: CAMBIO_PASSWORD,
-        data: {
-          email: email,
-          codigo: otp,
-          nuevaPass: newPassword,
-        },
+        data: requestData,
       });
 
       const result = response.data;
@@ -482,20 +549,52 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
   };
 
   const handleResendCode = async () => {
-    toast({
-      title: "Código reenviado",
-      description: "El código de verificación es: 123456"
-    });
+    setLoading(true);
+    try {
+      if (verificationMethod === 'email') {
+        await requests.post({
+          command: RECUPERAPASS_CORREO,
+          data: { email },
+        });
+        toast({
+          title: "Código reenviado",
+          description: "Se ha enviado un nuevo código a tu correo electrónico"
+        });
+      } else {
+        await requests.post({
+          command: ENVIAR_SMS_RECU,
+          data: { telefono: phone.replace(/\D/g, '') },
+        });
+        toast({
+          title: "Código reenviado",
+          description: "Se ha enviado un nuevo código a tu teléfono"
+        });
+      }
+    } catch (error: any) {
+      setErrorMessage(
+        error?.response?.data?.message ||
+        error.message ||
+        "No se pudo reenviar el código"
+      );
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // botón volver (retrocede un paso)
   const handleBack = () => {
     switch (currentStep) {
       case 'email':
+      case 'phone':
         setCurrentStep('method');
         break;
       case 'otp':
-        setCurrentStep('email');
+        if (verificationMethod === 'email') {
+          setCurrentStep('email');
+        } else {
+          setCurrentStep('phone');
+        }
         break;
       case 'password':
         setCurrentStep('otp');
@@ -506,7 +605,7 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
   };
 
   const handleLogout = () => {
-   router.back();
+    router.back();
   };
 
   // ----- Renders -----
@@ -538,7 +637,6 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
           <PhoneIcon />
           <Text style={styles.methodText}>SMS</Text>
         </TouchableOpacity>
-
       </View>
 
       <Button 
@@ -580,6 +678,33 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
     </View>
   );
 
+  const renderPhoneStep = () => (
+    <View style={styles.stepContainer}>
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Número de teléfono</Text>
+        <PhoneInput
+          value={phone}
+          onChange={setPhone}
+          placeholder="123 456-7890"
+        />
+        <Text style={styles.helperText}>
+          Ingresa tu número de teléfono para recibir un código por SMS
+        </Text>
+      </View>
+
+      <Button
+        onPress={handlePhoneSubmit}
+        style={[
+          styles.fullWidthButton,
+          (loading || !phone || !validatePhone(phone)) && styles.buttonDisabled
+        ]}
+        disabled={loading || !phone || !validatePhone(phone)}
+      >
+        {loading ? "Validando..." : "Enviar código"}
+      </Button>
+    </View>
+  );
+
   const renderOtpStep = () => (
     <View style={styles.stepContainer}>
       <View style={styles.otpStepContainer}>
@@ -594,7 +719,9 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
         />
 
         <TouchableOpacity onPress={handleResendCode} disabled={loading}>
-          <Text style={styles.resendText}>Reenviar código</Text>
+          <Text style={styles.resendText}>
+            {loading ? "Enviando..." : "Reenviar código"}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -653,6 +780,7 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
     switch (currentStep) {
       case 'method': return 'Método de verificación';
       case 'email': return 'Correo electrónico';
+      case 'phone': return 'Número de teléfono';
       case 'otp': return 'Código de verificación';
       case 'password': return 'Nueva contraseña';
       default: return 'Recuperar contraseña';
@@ -663,6 +791,7 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
     switch (currentStep) {
       case 'method': return renderMethodStep();
       case 'email': return renderEmailStep();
+      case 'phone': return renderPhoneStep();
       case 'otp': return renderOtpStep();
       case 'password': return renderPasswordStep();
       default: return renderMethodStep();
@@ -671,17 +800,17 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
 
   return (
     <SafeAreaView style={styles.container}>
-        <View style={[styles.card, styles.transparentCard]}>
-                  <Image
-                    source={require('@/assets/images/rg-logo.png')}
-                    style={[styles.logo, styles.largeLogo]}
-                    resizeMode="contain"
-                  />
-                </View>
+      <View style={[styles.card, styles.transparentCard]}>
+        <Image
+          source={require('@/assets/images/rg-logo.png')}
+          style={[styles.logo, styles.largeLogo]}
+          resizeMode="contain"
+        />
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Card style={styles.card}>
           <View style={styles.header}>
-            <Button variant="ghost" onPress={handleLogout} style={styles.backButton}>
+            <Button variant="ghost" onPress={handleBack} style={styles.backButton}>
               <ArrowLeftIcon />
             </Button>
             <Text style={styles.title}>{getStepTitle()}</Text>
@@ -714,20 +843,24 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
         title={
           currentAction === "password"
             ? "Enviando correo"
+            : currentAction === "sms"
+            ? "Enviando SMS"
             : currentAction === "validarCodigo"
-              ? "Validando Código"
-              : currentAction === "cambiarPass"
-                ? "Actualizando Contraseña"
-                : "Procesando..."
+            ? "Validando Código"
+            : currentAction === "cambiarPass"
+            ? "Actualizando Contraseña"
+            : "Procesando..."
         }
         message={
           currentAction === "password"
             ? "Estamos enviando el correo de verificación..."
+            : currentAction === "sms"
+            ? "Estamos enviando el SMS de verificación..."
             : currentAction === "validarCodigo"
-              ? "Validando Código"
-              : currentAction === "cambiarPass"
-                ? "Cambiando Contraseña"
-                : "Procesando..."
+            ? "Validando Código"
+            : currentAction === "cambiarPass"
+            ? "Cambiando Contraseña"
+            : "Procesando..."
         }
       />
     </SafeAreaView>
@@ -738,13 +871,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-   
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
     padding: 16,
-     marginTop: -200
+    marginTop: -200
   },
   card: {
     width: '100%',
@@ -820,6 +952,11 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: 'white',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -1001,7 +1138,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-   //Estilo para el logo
   transparentCard: {
     backgroundColor: 'transparent',
     shadowOpacity: 0,
@@ -1010,17 +1146,15 @@ const styles = StyleSheet.create({
     marginTop: 120,
     marginLeft: 70
   },
-
   logo: {
     width: 200,
     height: 100,
     marginBottom: 30,
     marginTop: -55
   },
-
   largeLogo: {
-    width: 300 * 0.8, // Más ancho
-    height: 150 * 0.8, // Más alto
+    width: 300 * 0.8,
+    height: 150 * 0.8,
     marginBottom: 30,
   },
 });

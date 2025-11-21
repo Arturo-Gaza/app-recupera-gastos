@@ -9,22 +9,15 @@ export default function FormDatosFiscalesScreen() {
 
   const handleBack = () => {
     router.back();
-    console.log('Regresar presionado');
+    
   };
 
   const handleSubmit = (fiscalData: any) => {
     setLoading(true);
-    console.log('Datos fiscales enviados:', fiscalData);
-    
-    // Aquí iría tu lógica para enviar los datos
-    // Por ejemplo:
-    // await enviarDatosFiscales(fiscalData);
+  
     
     setTimeout(() => {
       setLoading(false);
-      // Redirigir a la siguiente pantalla o mostrar éxito
-      // router.push('/SiguientePantalla');
-      console.log('Registro fiscal completado');
     }, 2000);
   };
 

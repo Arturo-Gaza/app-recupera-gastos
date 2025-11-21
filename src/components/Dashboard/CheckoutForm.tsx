@@ -110,7 +110,7 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
           tieneSuscripcionActivaSST: confirmData.data.is_subscription,
           DatosCompletosSST: confirmData.data.datos_completos,
           tienDatoFiscalSST: confirmData.data.datos_fiscales,
-          fecha_vencimiento: confirmData.data.fecha_vencimiento,
+          FechaVeigenciaSST: confirmData.data.fecha_vencimiento,
           vigencia_saldo: confirmData.data.vigencia_saldo
         });
 

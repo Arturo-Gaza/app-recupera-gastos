@@ -1,3 +1,4 @@
+import { useSession } from '@/src/hooks/useSession';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
@@ -14,8 +15,10 @@ interface InfoFormProps {
     loading?: boolean;
 }
 
+
 const InfoForm: React.FC<InfoFormProps> = ({ onSubmit, onLater, loading = false }) => {
     const router = useRouter();
+    const { session, loading: sessionLoading, refreshSession } = useSession();
 
     const handleInfoSubmit = () => {
         onSubmit?.();
@@ -23,7 +26,12 @@ const InfoForm: React.FC<InfoFormProps> = ({ onSubmit, onLater, loading = false 
     };
 
     const handleLater = () => {
-         router.push("/login");
+        if(session?.tienDatoFiscalSST === false){
+            router.push("/fiscalesAlert");
+        }else{
+            router.push("/dashboard")
+        }
+         
     };
 
     return (

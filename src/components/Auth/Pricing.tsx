@@ -81,7 +81,7 @@ const GetAllPlanes = async (): Promise<ApiResponse> => {
 };
 
 const ActivarPlan = async (planId: string): Promise<ApiResponse> => {
-    console.log('Activar plan:', planId);
+    
     return { success: true, data: [], data2: null, message: 'Plan activado' };
 };
 

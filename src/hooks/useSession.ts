@@ -24,7 +24,7 @@ interface UserSession {
   TipoPagoSST: string | null;
 
   // faltaban estos:
-  fecha_vencimiento?: string;
+  FechaVeigenciaSST?: string;
   vigencia_saldo?: string;
 }
 

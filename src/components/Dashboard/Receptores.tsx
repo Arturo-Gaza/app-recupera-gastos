@@ -1,5 +1,5 @@
 import { useSession } from "@/src/hooks/useSession";
-import { DATOS_FISCALES_GET_BY_ID, DATOS_FISCALES_TERCEROS_GETBYID } from "@/src/services/apiConstans";
+import { DATOS_FISCALES_DELETED, DATOS_FISCALES_GET_BY_ID, DATOS_FISCALES_TERCEROS_GETBYID, VALIDARCANTIDADRFC } from "@/src/services/apiConstans";
 import requests from "@/src/services/requests";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -37,6 +37,9 @@ export default function RecipientsManagement() {
     const [statusFilter, setStatusFilter] = useState("Todos");
     const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(null);
     const [showDetails, setShowDetails] = useState(false);
+    const [modalRFC, setModalRFC] = useState(false);
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+    const [receptorDelete, setReceptorDelete] = useState<string | null>(null);
 
     const fetchRecipients = async () => {
         if (!userId) return;
@@ -66,6 +69,23 @@ export default function RecipientsManagement() {
         }
     };
 
+    const ValidarCantidadRFC = async () => {
+        try {
+            const response = await requests.get({
+                command: VALIDARCANTIDADRFC
+            })
+
+            if (response.data.data.rfc_suficiente === false) {
+                setModalRFC(true);
+            } else {
+                router.push('/metodoRegistroFiscal')
+            }
+
+        } catch (error) {
+
+        }
+    }
+
     useEffect(() => {
         fetchRecipients();
     }, [userId]);
@@ -79,33 +99,35 @@ export default function RecipientsManagement() {
         return matchSearch && matchStatus;
     });
 
-    const handleDelete = (id: string) => {
-        Alert.alert("Confirmar eliminación", "¿Deseas eliminar este receptor?", [
-            { text: "Cancelar", style: "cancel" },
-            {
-                text: "Eliminar",
-                style: "destructive",
-                onPress: async () => {
-                    // aquí iría tu función para eliminar
-                    setRecipients((prev) => prev.filter((r) => r.id !== id));
-                },
-            },
-        ]);
+    const handleDelete = async (id: string) => {
+
+        try {
+            const response = await requests.post({
+                command: DATOS_FISCALES_DELETED + id
+            })
+
+            if (response.data.success) {
+                Alert.alert(response.data.message)
+            }
+
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Error de conexión';
+            Alert.alert('Error', message);
+        }
+        fetchRecipients();
+
     };
 
     const handleUpdate = async (id: string) => {
-        console.log("el id para actualizar", id)
+
         try {
             const response = await requests.get({
                 command: DATOS_FISCALES_GET_BY_ID + id
             });
 
-            console.log("los datos para actualizar el receptor", response.data)
-
-            // ✅ Navegar al formulario con los datos obtenidos
             if (response.data.success) {
                 router.push({
-                    pathname: '/FormDatosFiscalesScreen', // Ajusta la ruta si es diferente
+                    pathname: '/FormDatosFiscalesScreen',
                     params: {
                         initialData: JSON.stringify(response.data.data),
                         modo: 'edicion'
@@ -139,9 +161,7 @@ export default function RecipientsManagement() {
             <Text style={styles.title}>Administrar Receptores</Text>
             <TouchableOpacity
                 style={styles.boton}
-                onPress={() => {
-                    router.push('/metodoRegistroFiscal')
-                }}
+                onPress={ValidarCantidadRFC}
             >
                 <Text style={styles.botonTexto}>+ Nuevo Receptor</Text>
             </TouchableOpacity>
@@ -220,7 +240,12 @@ export default function RecipientsManagement() {
                                 <Icon name="create-outline" size={20} color="#666" />
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setReceptorDelete(item.id);
+                                    setShowConfirmDelete(true);
+                                }}
+                            >
                                 <Icon name="trash-outline" size={20} color="red" />
                             </TouchableOpacity>
                         </View>
@@ -272,6 +297,58 @@ export default function RecipientsManagement() {
                     </View>
                 </View>
             </Modal>
+
+            <Modal
+                visible={modalRFC}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setModalRFC(false)}
+            >
+                <View style={styles.modalBackground}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.labelTitulo}>Límite Alcanzado</Text>
+                        <Text style={styles.modalText}>Ya alcanzaste el número máximo de RFCs permitidos por tu plan actual.
+                            Para agregar más RFCs, mejora tu plan y obtén mayor capacidad.</Text>
+
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setModalRFC(false)}
+                        >
+                            <Text style={styles.closeText}>Cerrar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Confirmar eliminar */}
+            <Modal visible={showConfirmDelete} transparent animationType="fade">
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalBox}>
+                        <Text style={styles.modalTitle}>Confirmar eliminación</Text>
+                        <Text>¿Estás seguro de que deseas eliminar el receptor? Esta acción no se puede deshacer</Text>
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setShowConfirmDelete(false)}
+                            >
+                                <Text style={styles.cancelText}>Cancelar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.confirmButton}
+                                onPress={() => {
+                                    if (receptorDelete) {
+                                        handleDelete(receptorDelete);
+                                    }
+                                    setShowConfirmDelete(false);
+                                }}
+                            >
+                                <Text style={styles.confirmText}>Eliminar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
         </View>
     );
 }
@@ -360,12 +437,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         width: "80%",
     },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: "bold",
-        marginBottom: 15,
-        textAlign: "center",
-    },
     modalRow: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -383,7 +454,7 @@ const styles = StyleSheet.create({
         textAlign: "right",
     },
     closeButton: {
-        backgroundColor: "#007AFF",
+        backgroundColor: "#1A2A6C",
         padding: 12,
         borderRadius: 8,
         alignItems: "center",
@@ -404,4 +475,46 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: "600",
     },
+    modalBackground: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0,0,0,0.5)",
+    },
+    modalText: {
+        fontSize: 16,
+        fontWeight: "600",
+        textAlign: "center",
+        marginBottom: 15,
+    },
+    closeText: {
+        color: "white",
+        fontSize: 15,
+        fontWeight: "600",
+    },
+    labelTitulo: {
+        fontSize: 20,
+        marginBottom: 6,
+        textAlign: "center",
+        fontWeight: "bold"
+    },
+    // Estilos modales (se mantienen igual)
+    modalContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0,0,0,0.5)",
+    },
+    modalBox: {
+        backgroundColor: "#fff",
+        borderRadius: 10,
+        padding: 20,
+        width: "80%",
+    },
+    modalTitle: { fontWeight: "bold", fontSize: 18, marginBottom: 10 },
+    modalButtons: { flexDirection: "row", justifyContent: "flex-end", marginTop: 15 },
+    cancelButton: { marginRight: 10 },
+    cancelText: { color: "#6b7280" },
+    confirmButton: { backgroundColor: "#dc2626", padding: 8, borderRadius: 6 },
+    confirmText: { color: "#fff", fontWeight: "bold" },
 });

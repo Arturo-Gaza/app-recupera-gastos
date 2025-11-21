@@ -1,5 +1,7 @@
 import CheckoutForm from "@/src/components/Dashboard/CheckoutForm";
 import { useSession } from "@/src/hooks/useSession";
+import { ACTIVAR_PLAN } from "@/src/services/apiConstans";
+import requests from "@/src/services/requests";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import Constants from "expo-constants";
 import { useEffect, useState } from "react";
@@ -15,9 +17,44 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { session, loading: sessionLoading } = useSession();
+  const { updateSession } = useSession();
 
   // Obtener la Stripe API Key
   const stripeKey = Constants.expoConfig?.extra?.stripePublishableKey ?? "";
+
+   const handleActivarPlan = async (idRecarga: string) => {
+        
+        try {
+            const response = await requests.post({
+                command: ACTIVAR_PLAN + idRecarga
+            });
+
+            const responseData = response.data;
+
+            if (responseData?.success) {
+
+                const idPlan = responseData.data?.suscripcion?.id_plan ?? null;
+                const tipoPago = responseData.data?.tipo_pago ?? null;
+
+                await updateSession({
+                    IdPlanSST: idPlan,
+                    TipoPagoSST: tipoPago,
+                    tieneSuscripcionActivaSST: true,
+                    DatosCompletosSST: true
+                });
+
+            } else {
+                Alert.alert("Error", responseData?.message);
+                return null;
+            }
+        } catch (error: any) {
+            console.error("Error:", error);
+            Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    };
 
   useEffect(() => {
     if (!session || sessionLoading) return;
@@ -56,8 +93,9 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
             : {
               id_plan: parseInt(idRecarga),
               id_user: session.IdUsuarioSST,
+              
             };
-
+            await handleActivarPlan(idRecarga)
         
 
         const res = await fetch(url, {

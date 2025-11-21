@@ -30,24 +30,25 @@ interface CalcularPrecio {
   tipo: string | number | null;
   facturaTotalGratis: string | number | null;
   factura_restante: string | number | null;
+  $vigencia_saldo: string | number | null | boolean;
+  vigente: boolean | null;
+  fecha_vencimiento: string | number | null;
 }
 
-// Simula la función de la API - reemplaza con tu implementación real
 const GetCalcularPrecios = async (ticketId: number) => {
-  // Tu implementación real de la API aquí
-    try {
-        const response = await requests.get({ 
-            command: CALCULAR_PRECIO + ticketId
-        });
-        return response.data;
-    } catch (err) {
-        return { 
-            success: false, 
-            data: [], 
-            data2: null, 
-            message: 'Error al obtener los movimientos' 
-        };
-    }
+  try {
+    const response = await requests.get({ 
+      command: CALCULAR_PRECIO + ticketId
+    });
+    return response.data;
+  } catch (err) {
+    return { 
+      success: false, 
+      data: [], 
+      data2: null, 
+      message: 'Error al obtener los movimientos' 
+    };
+  }
 };
 
 export function TicketModal({ isOpen, onClose, ticketId, procesarTicket }: TicketModalProps) {
@@ -78,6 +79,11 @@ export function TicketModal({ isOpen, onClose, ticketId, procesarTicket }: Ticke
     }
   }, [isOpen, ticketId]);
 
+  // 🔹 Determinar tipo de pago
+  const tipoPago = calcularprecios?.tipo?.toString().toLowerCase();
+  const isPrepago = tipoPago === "prepago";
+  const isMensual = tipoPago === "mensual";
+
   // 🔹 Diccionario visual de niveles
   const tierMap = {
     Gratis: { progress: 25, color: "#9ca3af", precio: 0.0 },
@@ -97,6 +103,11 @@ export function TicketModal({ isOpen, onClose, ticketId, procesarTicket }: Ticke
       onClose();
     }
   };
+
+  // 🔹 Determinar si el botón debe estar deshabilitado
+  const isButtonDisabled = 
+    (isPrepago && calcularprecios?.insuficiente_saldo) ||
+    (isMensual && !calcularprecios?.vigente);
 
   return (
     <Modal
@@ -124,61 +135,100 @@ export function TicketModal({ isOpen, onClose, ticketId, procesarTicket }: Ticke
               <View style={styles.content}>
                 {calcularprecios && (
                   <View style={styles.infoContainer}>
-                    <Text style={styles.infoText}>
-                      <Text style={styles.bold}>Saldo actual:</Text>{' '}
-                      ${Number(calcularprecios.saldo_actual ?? 0).toFixed(2)}
-                    </Text>
-                    <Text style={styles.infoText}>
-                      <Text style={styles.bold}>Monto a cobrar:</Text>{' '}
-                      ${Number(calcularprecios.monto_a_cobrar ?? 0).toFixed(2)}
-                    </Text>
-                    <Text style={styles.infoText}>
-                      <Text style={styles.bold}>Saldo después:</Text>{' '}
-                      ${Number(calcularprecios.saldo_despues ?? 0).toFixed(2)}
-                    </Text>
-                    <Text style={styles.infoText}>
-                      <Text style={styles.bold}>Factura número:</Text>{' '}
-                      {calcularprecios.factura_numero || "N/A"}
-                    </Text>
+                    {/* --- 🔹 PREPAGO --- */}
+                    {isPrepago && (
+                      <>
+                        <Text style={styles.infoText}>
+                          <Text style={styles.bold}>Tipo de pago:</Text> Prepago
+                        </Text>
+                        <Text style={styles.infoText}>
+                          <Text style={styles.bold}>Saldo actual:</Text>{' '}
+                          ${Number(calcularprecios.saldo_actual ?? 0).toFixed(2)}
+                        </Text>
+                        <Text style={styles.infoText}>
+                          <Text style={styles.bold}>Monto a cobrar:</Text>{' '}
+                          ${Number(calcularprecios.monto_a_cobrar ?? 0).toFixed(2)}
+                        </Text>
+                        <Text style={styles.infoText}>
+                          <Text style={styles.bold}>Saldo después:</Text>{' '}
+                          ${Number(calcularprecios.saldo_despues ?? 0).toFixed(2)}
+                        </Text>
+                        <Text style={styles.infoText}>
+                          <Text style={styles.bold}>Factura número:</Text>{' '}
+                          {calcularprecios.factura_numero || "N/A"}
+                        </Text>
+                        
+                        {calcularprecios.$vigencia_saldo !== null && (
+                          <Text style={styles.infoText}>
+                            <Text style={styles.bold}>Fecha vigencia:</Text>{' '}
+                            {calcularprecios.$vigencia_saldo?.toString() || "N/A"}
+                          </Text>
+                        )}
 
-                    {calcularprecios.insuficiente_saldo ? (
-                      <Text style={styles.errorText}>
-                        ⚠️ No tienes saldo suficiente para procesar este ticket.
-                      </Text>
-                    ) : (
-                      <Text style={styles.successText}>
-                        ✅ Tienes saldo suficiente para procesar este ticket.
-                      </Text>
+                        {calcularprecios.insuficiente_saldo ? (
+                          <Text style={styles.errorText}>
+                            ⚠️ No tienes saldo suficiente para procesar este ticket.
+                          </Text>
+                        ) : (
+                          <Text style={styles.successText}>
+                            ✅ Tienes saldo suficiente para procesar este ticket.
+                          </Text>
+                        )}
+
+                        {Number(calcularprecios?.monto_a_cobrar) === 0 && (
+                          <View style={styles.freeTierContainer}>
+                            <Text style={styles.freeTierText}>
+                              💎 Te quedarán{' '}
+                              <Text style={styles.freeTierBold}>
+                                {calcularprecios?.factura_restante}
+                              </Text>{' '}
+                              de{' '}
+                              <Text style={styles.freeTierBold}>
+                                {calcularprecios?.facturaTotalGratis}
+                              </Text>{' '}
+                              tickets gratuitos disponibles.
+                            </Text>
+
+                            {/* Barra de progreso */}
+                            <View style={styles.progressBarContainer}>
+                              <View 
+                                style={[
+                                  styles.progressBar, 
+                                  { 
+                                    width: `${(Number(calcularprecios?.factura_restante) /
+                                      Number(calcularprecios?.facturaTotalGratis)) * 100}%`,
+                                    backgroundColor: '#10b981'
+                                  }
+                                ]} 
+                              />
+                            </View>
+                          </View>
+                        )}
+                      </>
                     )}
 
-                    {calcularprecios?.tier === "Gratis" && (
-                      <View style={styles.freeTierContainer}>
-                        <Text style={styles.freeTierText}>
-                          💎 Te quedarán{' '}
-                          <Text style={styles.freeTierBold}>
-                            {calcularprecios?.factura_restante}
-                          </Text>{' '}
-                          de{' '}
-                          <Text style={styles.freeTierBold}>
-                            {calcularprecios?.facturaTotalGratis}
-                          </Text>{' '}
-                          tickets gratuitos disponibles.
+                    {/* --- 🔹 MENSUAL --- */}
+                    {isMensual && (
+                      <>
+                        <Text style={styles.infoText}>
+                          <Text style={styles.bold}>Tipo de pago:</Text> Mensual
                         </Text>
 
-                        {/* Barra de progreso */}
-                        <View style={styles.progressBarContainer}>
-                          <View 
-                            style={[
-                              styles.progressBar, 
-                              { 
-                                width: `${(Number(calcularprecios?.factura_restante) /
-                                  Number(calcularprecios?.facturaTotalGratis)) * 100}%`,
-                                backgroundColor: '#10b981'
-                              }
-                            ]} 
-                          />
-                        </View>
-                      </View>
+                        <Text style={styles.infoText}>
+                          <Text style={styles.bold}>Fecha vigencia:</Text>{' '}
+                          {calcularprecios.fecha_vencimiento || "N/A"}
+                        </Text>
+
+                        {calcularprecios.vigente ? (
+                          <Text style={styles.successText}>
+                            ✅ Tu membresía está activa. Puedes procesar este ticket.
+                          </Text>
+                        ) : (
+                          <Text style={styles.errorText}>
+                            ⚠️ Tu membresía ha expirado. Renueva para continuar.
+                          </Text>
+                        )}
+                      </>
                     )}
 
                     {/* 🔹 Indicador visual del TIER */}
@@ -204,6 +254,7 @@ export function TicketModal({ isOpen, onClose, ticketId, procesarTicket }: Ticke
                       </View>
                     )}
 
+                    {/* 🔹 Mostrar error si existe */}
                     {calcularprecios.error && (
                       <Text style={styles.errorText}>
                         <Text style={styles.bold}>Error:</Text> {calcularprecios.error}
@@ -225,12 +276,12 @@ export function TicketModal({ isOpen, onClose, ticketId, procesarTicket }: Ticke
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
-                    disabled={calcularprecios?.insuficiente_saldo}
+                    disabled={isButtonDisabled}
                     onPress={handleProcesar}
                     style={[
                       styles.button, 
                       styles.confirmButton,
-                      calcularprecios?.insuficiente_saldo && styles.disabledButton
+                      isButtonDisabled && styles.disabledButton
                     ]}
                   >
                     <Text style={[styles.buttonText, styles.confirmButtonText]}>
@@ -368,6 +419,9 @@ const styles = StyleSheet.create({
   },
   tierContainer: {
     marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
   },
   tierProgressContainer: {
     width: '100%',
