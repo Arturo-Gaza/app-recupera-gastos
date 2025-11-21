@@ -1,4 +1,4 @@
-import { CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN, DATOS_FISCALES_CREATE } from '@/src/services/apiConstans';
+import { CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN, DATOS_FISCALES_CREATE, DATOS_FISCALES_UPDATE } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle, ChevronDown, ChevronUp, FileText, Home, Receipt, User } from 'lucide-react-native';
@@ -126,7 +126,7 @@ function SuccessStep({
   };
 
   const handlerDash = () => {
-     router.push('/dashboard');
+    router.push('/dashboard');
   }
 
   return (
@@ -248,9 +248,9 @@ interface FormDatosFiscalesCompletoProps {
   modo?: 'creacion' | 'edicion';
 }
 
-export default function FormDatosFiscalesCompleto({ 
-  initialData, 
-  modo = 'creacion' 
+export default function FormDatosFiscalesCompleto({
+  initialData,
+  modo = 'creacion'
 }: FormDatosFiscalesCompletoProps) {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -305,8 +305,8 @@ export default function FormDatosFiscalesCompleto({
 
   //NUEVA FUNCIÓN: Cargar datos cuando estamos editando
   const cargarDatosEdicion = (datosEdicion: any) => {
-    
-    
+
+
     setThirdPartyData({
       es_persona_moral: datosEdicion.es_persona_moral || false,
       nombre_razon: datosEdicion.nombre_razon || '',
@@ -349,7 +349,7 @@ export default function FormDatosFiscalesCompleto({
       setSelectedRegimens(regimenesSeleccionados);
     }
 
-    
+
   };
 
   // ========== CARGA AUTOMÁTICA DESDE ARCHIVO CSF ==========
@@ -369,7 +369,7 @@ export default function FormDatosFiscalesCompleto({
           setAutoLoaded(true);
 
         } catch (error) {
-          
+
           Alert.alert(
             "Error al cargar datos",
             "No se pudieron cargar los datos del archivo CSF. Por favor, ingresa los datos manualmente.",
@@ -590,7 +590,7 @@ export default function FormDatosFiscalesCompleto({
             regimensData = parsedData;
           }
         } catch (parseError) {
-          
+
         }
       }
       else if (response.data && Array.isArray(response.data)) {
@@ -603,7 +603,7 @@ export default function FormDatosFiscalesCompleto({
       setAvailableRegimens(regimensData);
 
     } catch (error) {
-      
+
       Alert.alert('Error', 'No se pudieron cargar los regímenes fiscales');
       setAvailableRegimens([]);
     } finally {
@@ -751,15 +751,14 @@ export default function FormDatosFiscalesCompleto({
     return completeData;
   };
 
-  const handleFinalSubmit = async () => {
-    if (!validateRegimenesFiscales()) return;
+  // ========== HANDLERS SEPARADOS PARA CREAR Y ACTUALIZAR ==========
 
+  // Handler para crear nuevo registro
+  const handleCreate = async () => {
     setInternalLoading(true);
-
+    
     try {
       const completeData = buildCompleteJSON();
-
-      // ✅ MODIFICADO: Mensaje dinámico según modo
       const response = await requests.post({
         command: DATOS_FISCALES_CREATE,
         data: completeData,
@@ -768,29 +767,62 @@ export default function FormDatosFiscalesCompleto({
       const { data } = response;
 
       if (data.success) {
-        // ✅ MODIFICADO: Mensaje de éxito dinámico
-        Alert.alert(
-          '¡Éxito!', 
-          modo === 'edicion' ? 'Receptor actualizado correctamente' : 'Receptor registrado exitosamente',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Redirigir al dashboard o gestión de receptores
-                router.push('/dashboard');
-              }
-            }
-          ]
-        );
+        Alert.alert('¡Éxito!', 'Registro fiscal completado correctamente');
+        // Opcional: navegar o limpiar formulario después del éxito
+        // setCurrentStep('exito');
       } else {
-        throw new Error(data.message || 'Error en la respuesta del servidor');
+        Alert.alert('Error', data.message || 'Error al crear el registro');
       }
-
-    } catch (error: any) {
       
-      Alert.alert('Error', 'No se pudo completar el registro fiscal');
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error de conexión al crear';
+      Alert.alert('Error', message);
     } finally {
       setInternalLoading(false);
+    }
+  };
+
+  // Handler para actualizar registro existente
+  const handleUpdate = async () => {
+    setInternalLoading(true);
+    
+    try {
+      const completeData = buildCompleteJSON();
+      const response = await requests.put({
+        command: DATOS_FISCALES_UPDATE,
+        data: completeData,
+      });
+
+      const { data } = response;
+
+      if (data.success) {
+        Alert.alert('¡Éxito!', 'Receptor actualizado correctamente');
+        // Opcional: navegar o limpiar formulario después del éxito
+        // setCurrentStep('exito');
+        router.back(); 
+        
+      } else {
+        Alert.alert('Error', data.message || 'Error al actualizar el registro');
+      }
+      
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error de conexión al actualizar';
+      Alert.alert('Error', message);
+    } finally {
+      setInternalLoading(false);
+    }
+  };
+
+  // Handler principal que decide cuál usar
+  const handleFinalSubmit = async () => {
+    if (!validateRegimenesFiscales()) return;
+
+    if (modo === 'edicion') {
+      await handleUpdate();
+      console.log("Estoy seleccionando el update")
+    } else {
+      await handleCreate();
+      console.log("Estoy seleccionando el create")
     }
   };
 
@@ -1013,8 +1045,8 @@ export default function FormDatosFiscalesCompleto({
 
         <Text style={styles.headerTitle}>
           {modo === 'edicion' ? 'Editar Receptor' : 'Datos Fiscales del Tercero'}
-          {currentStep === 'regimenes' ? ' - Regímenes Fiscales' : 
-           currentStep === 'exito' ? ' - Registro Exitoso' : ''}
+          {currentStep === 'regimenes' ? ' - Regímenes Fiscales' :
+            currentStep === 'exito' ? ' - Registro Exitoso' : ''}
         </Text>
 
         {/* Mostrar loading mientras se procesa el CSF */}

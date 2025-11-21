@@ -9,11 +9,9 @@ export default function CheckoutPageScreen() {
   const idRecarga = params.idRecarga as string;
   const tipoPago = params.tipoPago as string ;
 
-  console.log("Parámetros recibidos:", { idRecarga, tipoPago });
 
   // Validación de parámetros requeridos
   if (!idRecarga) {
-    console.warn("Parámetros incompletos:", { idRecarga, tipoPago });
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>ID de recarga no especificado</Text>

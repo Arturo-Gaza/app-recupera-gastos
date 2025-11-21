@@ -58,7 +58,7 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
               id_user: session.IdUsuarioSST,
             };
 
-        console.log("Solicitando pago:", { url, body });
+        
 
         const res = await fetch(url, {
           method: "POST",

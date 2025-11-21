@@ -23,12 +23,11 @@ interface ForgotPasswordFormProps {
 }
 
 type Step = 'method' | 'email' | 'otp' | 'password';
-type VerificationMethod = 'email' | 'sms' | 'whatsapp';
+type VerificationMethod = 'email' | 'sms';
 
 // Iconos simples
 const MailIcon = () => <Text>📧</Text>;
 const PhoneIcon = () => <Text>📞</Text>;
-const MessageIcon = () => <Text>💬</Text>;
 const ArrowLeftIcon = () => <Text>←</Text>;
 
 // Componente Card
@@ -540,16 +539,6 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
           <Text style={styles.methodText}>SMS</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.methodButton,
-            verificationMethod === 'whatsapp' && styles.methodButtonSelected
-          ]}
-          onPress={() => setVerificationMethod('whatsapp')}
-        >
-          <MessageIcon />
-          <Text style={styles.methodText}>WhatsApp</Text>
-        </TouchableOpacity>
       </View>
 
       <Button 
