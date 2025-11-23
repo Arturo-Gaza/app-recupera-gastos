@@ -1,4 +1,4 @@
-import { CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN, DATOS_FISCALES_CREATE, DATOS_FISCALES_UPDATE } from '@/src/services/apiConstans';
+import { CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN, DATOS_FISCALES_CREATE, DATOS_FISCALES_UPDATE, ENVIAR_CORREO_RECEPTOR } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle, ChevronDown, ChevronUp, FileText, Home, Receipt, User } from 'lucide-react-native';
@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 import { useSession } from '../../hooks/useSession';
+import EmailVerificationModal from '../Modales/EmailVerificar';
 
 // ========== INTERFACES ==========
 interface DomicilioFiscal {
@@ -295,6 +296,43 @@ export default function FormDatosFiscalesCompleto({
   const [autoLoaded, setAutoLoaded] = useState(false);
   const [loadingCSF, setLoadingCSF] = useState(false);
   const { session, loading: sessionLoading } = useSession();
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [email, setEmail] = useState('');
+  const [EmailVerificar, setEmailVerificar] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
+
+
+  const idUser = session?.IdUsuarioSST;
+
+  const handleVerificationSuccess = () => {
+    console.log('Email verificado exitosamente');
+    // Tu lógica cuando la verificación es exitosa
+  };
+
+  const handleCloseModal = () => {
+    setShowEmailModal(false);
+  };
+
+  const validarCorreoReceptor = async (correo: string) => {
+
+    try {
+      const response = await requests.post({
+        command: ENVIAR_CORREO_RECEPTOR,
+        data: {
+          email: correo,
+          id_user: idUser
+        }
+      })
+      const result = response.data;
+
+      if (result.success) {
+        setEmailVerificar(correo);
+        setShowEmailModal(true);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   // NUEVO: Cargar datos de edición
   useEffect(() => {
@@ -1297,16 +1335,33 @@ export default function FormDatosFiscalesCompleto({
                       <TouchableOpacity
                         style={[
                           styles.verifyButton,
-                          (!thirdPartyData.email_facturacion_text || !validateEmail(thirdPartyData.email_facturacion_text)) && styles.verifyButtonDisabled
+                          emailVerified && { backgroundColor: 'white', borderWidth: 1, borderColor: 'green' },
+                          (!thirdPartyData.email_facturacion_text ||
+                            !validateEmail(thirdPartyData.email_facturacion_text)) &&
+                          styles.verifyButtonDisabled
                         ]}
                         onPress={() => {
-                          // Aquí va tu lógica de verificación
-                          console.log('Verificando email:', thirdPartyData.email_facturacion_text);
+                          validarCorreoReceptor(thirdPartyData.email_facturacion_text);
                         }}
-                        disabled={!thirdPartyData.email_facturacion_text || !validateEmail(thirdPartyData.email_facturacion_text) || currentLoading}
+                        disabled={
+                          !thirdPartyData.email_facturacion_text ||
+                          !validateEmail(thirdPartyData.email_facturacion_text) ||
+                          currentLoading ||
+                          emailVerified
+                        }
                       >
-                        <Text style={styles.verifyButtonText}>Verificar</Text>
+                        {emailVerified ? (
+                          <CheckCircle
+                            size={22}
+                            color="green"
+                            style={{ alignSelf: "center", backgroundColor: "white" }}
+                          />
+                        ) : (
+                          <Text style={styles.verifyButtonText}>Verificar</Text>
+                        )}
                       </TouchableOpacity>
+
+
                     </View>
                     {thirdPartyData.email_facturacion_text && !validateEmail(thirdPartyData.email_facturacion_text) && (
                       <Text style={styles.errorText}>Formato de correo inválido</Text>
@@ -1378,9 +1433,14 @@ export default function FormDatosFiscalesCompleto({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.button, styles.primaryButton, currentLoading && styles.disabledButton]}
+                  style={[
+                    styles.button,
+                    styles.primaryButton,
+                    currentLoading && styles.disabledButton,
+                    !emailVerified && styles.disabledButton   // <--- DESHABILITA SI NO ESTÁ VERIFICADO
+                  ]}
                   onPress={handleNextStep}
-                  disabled={currentLoading}
+                  disabled={currentLoading || !emailVerified}  // <--- DESHABILITA SI NO ESTÁ VERIFICADO
                 >
                   {currentLoading ? (
                     <ActivityIndicator color="#fff" size="small" />
@@ -1390,6 +1450,7 @@ export default function FormDatosFiscalesCompleto({
                     </Text>
                   )}
                 </TouchableOpacity>
+
               </View>
             </View>
           </>
@@ -1540,6 +1601,13 @@ export default function FormDatosFiscalesCompleto({
       </ScrollView>
 
       {/*Modal de c */}
+      <EmailVerificationModal
+        visible={showEmailModal}
+        email={EmailVerificar}
+        onClose={handleCloseModal}
+        onVerificationSuccess={handleVerificationSuccess}
+        onSuccess={() => setEmailVerified(true)}
+      />
     </View>
   );
 }

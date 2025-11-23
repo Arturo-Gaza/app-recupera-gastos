@@ -50,5 +50,7 @@ export const GOOGLE_AUTH = "http://192.168.1.171:8000/auth/google";
 export const SERVIDOR = "http://192.168.1.171:8000";
 export const DATOS_FISCALES_DELETED = 'datosFiscales/eliminarReceptor/'
 export const VALIDARCANTIDADRFC = 'user/validarCantidadRFC'
+export const ENVIAR_CORREO_RECEPTOR = 'usuario/enviarCorreoValReceptor'
+export const CONFIRMAR_CODE_RECEPTOR = 'usuario/validarCorreoValReceptor'
 
 
