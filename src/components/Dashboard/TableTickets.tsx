@@ -134,14 +134,7 @@ export const TicketsTable = () => {
                 });
                 setSelectedValues(initialSelectedValues);
             } else {
-                // Si no hay receptores desde la API, usar datos del usuario como opción por defecto
-                const defaultOption: Option = {
-                    value: "5", // ID del datos_fiscales_personal
-                    label: "Arturo Gabriel zamora",
-                    predeterminado: true
-                };
-                setOptions([defaultOption]);
-
+              
                 const initialSelectedValues: { [ticketId: string]: string } = {};
                 tickets.forEach(ticket => {
                     initialSelectedValues[ticket.id] = String(ticket.id_receptor) || "5";

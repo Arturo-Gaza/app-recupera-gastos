@@ -1,13 +1,14 @@
 import { SOLICITUD_DASHBOARD } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { styles } from '@/src/styles/DashboardTabStyle';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, FileText, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   Dimensions,
+  Platform,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
@@ -65,9 +66,17 @@ interface ApiResponse {
   message: string;
 }
 
+// Función para formatear fecha como YYYY-MM-DD
+const formatDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function DashboardTab() {
   const [apiData, setApiData] = useState<ApiDashboardData | null>(null);
-  const [expandido, setExpandido] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState<'inicio' | 'fin' | null>(null);
   const [fechaData, setFechaData] = useState({
     fecha_inicio: '',
     fecha_fin: ''
@@ -85,7 +94,10 @@ export function DashboardTab() {
     try {
       const response = await requests.post({
         command: SOLICITUD_DASHBOARD,
-        data: fechaData
+        data: {
+          ...fechaData,
+          usuario_id: "" // Agregar el usuario_id vacío como requeriste
+        }
       });
 
       const apiResponse: ApiResponse = response.data;
@@ -176,20 +188,37 @@ export function DashboardTab() {
   const successRate = ticketsCerrados > 0 ? Math.round((exitosos / ticketsCerrados) * 100) : 0;
   const failureRate = ticketsCerrados > 0 ? Math.round((fallidos / ticketsCerrados) * 100) : 0;
 
-  // Handlers para fechas
-  const toggleExpandido = () => {
-    setExpandido(!expandido);
-    if (expandido && fechaData.fecha_inicio !== "") {
-      setFechaData({ fecha_inicio: "", fecha_fin: "" });
+  // Handlers para el date picker
+  const handleDateChange = (event: any, selectedDate?: Date, type: 'inicio' | 'fin' = 'inicio') => {
+    setShowDatePicker(null);
+    
+    if (selectedDate) {
+      const formattedDate = formatDate(selectedDate);
+      
+      if (type === 'inicio') {
+        setFechaData(prev => ({ ...prev, fecha_inicio: formattedDate }));
+      } else {
+        setFechaData(prev => ({ ...prev, fecha_fin: formattedDate }));
+      }
     }
   };
 
-  const handleFechaInicioChange = (text: string) => {
-    setFechaData(prev => ({ ...prev, fecha_inicio: text }));
+  const mostrarDatePicker = (type: 'inicio' | 'fin') => {
+    setShowDatePicker(type);
   };
 
-  const handleFechaFinChange = (text: string) => {
-    setFechaData(prev => ({ ...prev, fecha_fin: text }));
+  const limpiarFechas = () => {
+    setFechaData({
+      fecha_inicio: '',
+      fecha_fin: ''
+    });
+  };
+
+  const getDisplayText = () => {
+    if (fechaData.fecha_inicio && fechaData.fecha_fin) {
+      return `${fechaData.fecha_inicio} - ${fechaData.fecha_fin}`;
+    }
+    return "Últimos 30 días (automático)";
   };
 
   if (loading) {
@@ -206,39 +235,62 @@ export function DashboardTab() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Filtros de Fecha */}
       <View style={styles.filtersContainer}>
-        <TouchableOpacity 
-          style={styles.dateToggleButton}
-          onPress={toggleExpandido}
-        >
-          <Calendar size={16} color="#666" />
-          <Text style={styles.dateToggleText}>
-            {expandido ? "Últimos 30 días" : "Establecer rango de fecha"}
-          </Text>
-        </TouchableOpacity>
-
-        {expandido && (
-          <View style={styles.dateInputsContainer}>
-            <View style={styles.dateInputGroup}>
-              <Text style={styles.dateLabel}>Inicio</Text>
-              <TextInput
-                style={styles.dateInput}
-                value={fechaData.fecha_inicio}
-                onChangeText={handleFechaInicioChange}
-                placeholder="YYYY-MM-DD"
-              />
-            </View>
-
-            <View style={styles.dateInputGroup}>
-              <Text style={styles.dateLabel}>Fin</Text>
-              <TextInput
-                style={styles.dateInput}
-                value={fechaData.fecha_fin}
-                onChangeText={handleFechaFinChange}
-                placeholder="YYYY-MM-DD"
-                editable={!!fechaData.fecha_inicio}
-              />
-            </View>
+        <Text style={styles.dateSectionTitle}>Rango de Fechas</Text>
+        
+        <View style={styles.dateSelectionContainer}>
+          <View style={styles.dateInputGroup}>
+            <Text style={styles.dateLabel}>Fecha Inicio</Text>
+            <TouchableOpacity 
+              style={styles.dateButton}
+              onPress={() => mostrarDatePicker('inicio')}
+            >
+              <Calendar size={16} color="#666" />
+              <Text style={styles.dateButtonText}>
+                {fechaData.fecha_inicio || "Seleccionar fecha"}
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          <View style={styles.dateInputGroup}>
+            <Text style={styles.dateLabel}>Fecha Fin</Text>
+            <TouchableOpacity 
+              style={styles.dateButton}
+              onPress={() => mostrarDatePicker('fin')}
+              disabled={!fechaData.fecha_inicio}
+            >
+              <Calendar size={16} color="#666" />
+              <Text style={[
+                styles.dateButtonText,
+                !fechaData.fecha_inicio && styles.dateButtonTextDisabled
+              ]}>
+                {fechaData.fecha_fin || "Seleccionar fecha"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {(fechaData.fecha_inicio || fechaData.fecha_fin) && (
+          <TouchableOpacity 
+            style={styles.clearButton}
+            onPress={limpiarFechas}
+          >
+            <Text style={styles.clearButtonText}>Limpiar fechas (usar 30 días automático)</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.currentRangeDisplay}>
+          <Text style={styles.currentRangeLabel}>Rango actual:</Text>
+          <Text style={styles.currentRangeText}>{getDisplayText()}</Text>
+        </View>
+
+        {/* Date Pickers */}
+        {showDatePicker && (
+          <DateTimePicker
+            value={new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(event, date) => handleDateChange(event, date, showDatePicker)}
+          />
         )}
       </View>
 
@@ -247,9 +299,7 @@ export function DashboardTab() {
         <View style={styles.statCard}>
           <View style={styles.statContent}>
             <View style={styles.statTextContainer}>
-              <Text style={styles.statLabel}>
-                Tickets totales {fechaData.fecha_inicio !== "" && fechaData.fecha_fin !== "" ? "" : "(Últimos 30 días)"}
-              </Text>
+              <Text style={styles.statLabel}>Tickets totales</Text>
               <Text style={styles.statValue}>{totalTickets}</Text>
               <Text style={styles.statDescription}>Incluye automáticos y manuales</Text>
             </View>
@@ -280,7 +330,7 @@ export function DashboardTab() {
         </View>
       </View>
 
-      {/* Charts Section */}
+      {/* Resto del código se mantiene igual */}
       <View style={styles.chartsContainer}>
         {/* Gráfica Pie */}
         <View style={styles.chartCard}>
@@ -391,4 +441,3 @@ export function DashboardTab() {
     </ScrollView>
   );
 }
-
