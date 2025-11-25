@@ -318,9 +318,4 @@ currentRangeLabel: {
   fontWeight: '600',
   marginBottom: 4,
 },
-currentRangeText: {
-  fontSize: 14,
-  color: '#1e40af',
-  fontWeight: '500',
-},
 });

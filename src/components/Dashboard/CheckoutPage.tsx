@@ -22,39 +22,39 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
   // Obtener la Stripe API Key
   const stripeKey = Constants.expoConfig?.extra?.stripePublishableKey ?? "";
 
-   const handleActivarPlan = async (idRecarga: string) => {
-        
-        try {
-            const response = await requests.post({
-                command: ACTIVAR_PLAN + idRecarga
-            });
+  const handleActivarPlan = async (idRecarga: string) => {
 
-            const responseData = response.data;
+    try {
+      const response = await requests.post({
+        command: ACTIVAR_PLAN + idRecarga
+      });
 
-            if (responseData?.success) {
+      const responseData = response.data;
 
-                const idPlan = responseData.data?.suscripcion?.id_plan ?? null;
-                const tipoPago = responseData.data?.tipo_pago ?? null;
+      if (responseData?.success) {
 
-                await updateSession({
-                    IdPlanSST: idPlan,
-                    TipoPagoSST: tipoPago,
-                    tieneSuscripcionActivaSST: true,
-                    DatosCompletosSST: true
-                });
+        const idPlan = responseData.data?.suscripcion?.id_plan ?? null;
+        const tipoPago = responseData.data?.tipo_pago ?? null;
 
-            } else {
-                Alert.alert("Error", responseData?.message);
-                return null;
-            }
-        } catch (error: any) {
-            console.error("Error:", error);
-            Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
-            return null;
-        } finally {
-            setLoading(false);
-        }
-    };
+        await updateSession({
+          IdPlanSST: idPlan,
+          TipoPagoSST: tipoPago,
+          tieneSuscripcionActivaSST: true,
+          DatosCompletosSST: true
+        });
+
+      } else {
+        Alert.alert("Error", responseData?.message);
+        return null;
+      }
+    } catch (error: any) {
+      console.error("Error:", error);
+      Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!session || sessionLoading) return;
@@ -79,6 +79,8 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
         }
 
         // Configurar URL y body según tipo de pago
+
+        const isPrepago = tipoPago === "prepago";
         const url =
           tipoPago === "prepago"
             ? "http://192.168.1.171:8000/api/stripe/crearPagoByPrepago"
@@ -93,10 +95,13 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
             : {
               id_plan: parseInt(idRecarga),
               id_user: session.IdUsuarioSST,
-              
+
             };
-            await handleActivarPlan(idRecarga)
-        
+            
+        if (!isPrepago) {
+          await handleActivarPlan(idRecarga);
+        }
+
 
         const res = await fetch(url, {
           method: "POST",

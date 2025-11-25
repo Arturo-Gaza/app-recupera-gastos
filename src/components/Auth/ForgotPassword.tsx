@@ -59,18 +59,7 @@ const Button = ({ children, onPress, disabled, style, variant = 'default' }: any
 // Componente PhoneInput
 const PhoneInput = ({ value, onChange, placeholder }: any) => {
   const formatPhoneNumber = (text: string) => {
-    // Remover todos los caracteres no numéricos
-    const cleaned = text.replace(/\D/g, '');
-    
-    // Aplicar formato básico (puedes ajustar según tu país)
-    let formatted = cleaned;
-    if (cleaned.length > 3 && cleaned.length <= 6) {
-      formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
-    } else if (cleaned.length > 6) {
-      formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
-    }
-    
-    return formatted;
+    return text.replace(/\D/g, '');
   };
 
   const handleChange = (text: string) => {
@@ -95,7 +84,7 @@ const PhoneInput = ({ value, onChange, placeholder }: any) => {
 // Componente PasswordInput MEJORADO
 const PasswordInput = ({ value, onChange, placeholder, showValidation = false }: any) => {
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Validación de contraseña
   const validatePassword = (pass: string) => {
     const hasMinLength = pass.length >= 8;
@@ -194,7 +183,7 @@ const InputOTP = ({ length = 6, value, onChange }: any) => {
 
   const handleChange = (text: string, index: number) => {
     const numericText = text.replace(/[^0-9]/g, '');
-    
+
     if (numericText) {
       const newValue = value.split('');
       newValue[index] = numericText;
@@ -296,7 +285,7 @@ const toast = ({ title, description }: any) => {
   Alert.alert(title, description);
 };
 
-export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProps) {
+export function ForgotPasswordForm({ onBack = () => { } }: ForgotPasswordFormProps) {
   const [currentStep, setCurrentStep] = useState<Step>('method');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -413,20 +402,18 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
     setLoading(true);
 
     try {
+    
       const response = await requests.post({
         command: ENVIAR_SMS_RECU,
-        data: { telefono: phone.replace(/\D/g, '') }, // Enviar solo números
-      });
+        data: { phone: phone },
 
+      });
+      
       const result = response.data;
-
-      toast({
-        title: "SMS enviado",
-        description: result?.message || "Revisa tu teléfono para el código de verificación",
-      });
 
       setCurrentStep("otp");
     } catch (error: any) {
+    
       console.error("Error al enviar SMS:", error);
 
       setErrorMessage(
@@ -440,6 +427,8 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
         </Button>
       );
       setShowErrorModal(true);
+
+
     } finally {
       setLoading(false);
     }
@@ -453,7 +442,7 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
     setLoading(true);
     try {
       let response;
-      
+
       if (verificationMethod === 'email') {
         response = await requests.post({
           command: VALIDA_CODIGO,
@@ -508,17 +497,17 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
     setLoading(true);
 
     try {
-      const requestData = verificationMethod === 'email' 
+      const requestData = verificationMethod === 'email'
         ? {
-            email: email,
-            codigo: otp,
-            nuevaPass: newPassword,
-          }
+          email: email,
+          codigo: otp,
+          nuevaPass: newPassword,
+        }
         : {
-            telefono: phone.replace(/\D/g, ''),
-            codigo: otp,
-            nuevaPass: newPassword,
-          };
+          telefono: phone.replace(/\D/g, ''),
+          codigo: otp,
+          nuevaPass: newPassword,
+        };
 
       const response = await requests.post({
         command: CAMBIO_PASSWORD,
@@ -639,9 +628,9 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
         </TouchableOpacity>
       </View>
 
-      <Button 
-        onPress={handleMethodSubmit} 
-        style={styles.fullWidthButton} 
+      <Button
+        onPress={handleMethodSubmit}
+        style={styles.fullWidthButton}
         disabled={loading}
       >
         {loading ? "Cargando..." : "Continuar"}
@@ -815,7 +804,7 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
             </Button>
             <Text style={styles.title}>{getStepTitle()}</Text>
           </View>
-          
+
           <View style={styles.content}>
             {renderStepContent()}
           </View>
@@ -844,23 +833,23 @@ export function ForgotPasswordForm({ onBack = () => {} }: ForgotPasswordFormProp
           currentAction === "password"
             ? "Enviando correo"
             : currentAction === "sms"
-            ? "Enviando SMS"
-            : currentAction === "validarCodigo"
-            ? "Validando Código"
-            : currentAction === "cambiarPass"
-            ? "Actualizando Contraseña"
-            : "Procesando..."
+              ? "Enviando SMS"
+              : currentAction === "validarCodigo"
+                ? "Validando Código"
+                : currentAction === "cambiarPass"
+                  ? "Actualizando Contraseña"
+                  : "Procesando..."
         }
         message={
           currentAction === "password"
             ? "Estamos enviando el correo de verificación..."
             : currentAction === "sms"
-            ? "Estamos enviando el SMS de verificación..."
-            : currentAction === "validarCodigo"
-            ? "Validando Código"
-            : currentAction === "cambiarPass"
-            ? "Cambiando Contraseña"
-            : "Procesando..."
+              ? "Estamos enviando el SMS de verificación..."
+              : currentAction === "validarCodigo"
+                ? "Validando Código"
+                : currentAction === "cambiarPass"
+                  ? "Cambiando Contraseña"
+                  : "Procesando..."
         }
       />
     </SafeAreaView>

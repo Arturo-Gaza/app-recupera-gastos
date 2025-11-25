@@ -327,7 +327,7 @@ export default function FormDatosFiscalesCompleto({
 
       if (result.success) {
         setEmailVerificar(correo);
-        setShowEmailModal(true);
+        
       }
     } catch (e) {
       console.error(e);
@@ -1342,6 +1342,7 @@ export default function FormDatosFiscalesCompleto({
                         ]}
                         onPress={() => {
                           validarCorreoReceptor(thirdPartyData.email_facturacion_text);
+                          setShowEmailModal(true);
                         }}
                         disabled={
                           !thirdPartyData.email_facturacion_text ||

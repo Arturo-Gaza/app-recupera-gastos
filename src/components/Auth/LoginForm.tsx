@@ -17,9 +17,15 @@ import {
   View
 } from "react-native";
 
-// ⭐ Google Auth
+
 import * as AuthSession from "expo-auth-session";
+import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
+import ErrorModal from "../Modales/ModalPassword";
+
+const redirectUri = Linking.createURL("auth/callback");
+
+
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -28,14 +34,19 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const redirectUri = AuthSession.makeRedirectUri();
+  const [modalVisible, setModalVisible] = useState(false);
+
+
+
 
   // ------------------------------------------------------------------
-  // ⭐⭐ LOGIN CON GOOGLE (COMPLETO)
+  //LOGIN CON GOOGLE (COMPLETO)
   // ------------------------------------------------------------------
   const handleGoogleLogin = async () => {
     try {
       const redirectUri = AuthSession.makeRedirectUri({
-        scheme: "myapp", // 👈 Debe coincidir con app.json
+        scheme: "recupergastos",
       });
 
       const authUrl = `http://192.168.1.171:8000/auth/google?redirect_uri=${encodeURIComponent(
@@ -59,7 +70,6 @@ export default function LoginForm() {
         Alert.alert("Error", "No se recibió token desde el servidor.");
         return;
       }
-
       // Guardar sesión igual que el login normal (ajústalo a tus campos)
       const dataSST = {
         SesionSST: true,
@@ -97,7 +107,7 @@ export default function LoginForm() {
     }
   };
 
-  
+
   // ------------------------------------------------------------------
   const handleLogin = async () => {
     try {
@@ -149,16 +159,16 @@ export default function LoginForm() {
       } else {
         Alert.alert("Aviso", data?.message);
       }
-    } catch (error) {
-      Alert.alert("Aviso", "No se pudo conectar al servidor");
+    } catch (error: any) {
+      const msg = error.response?.data?.message;
+
+      setModalVisible(true)
     } finally {
       setLoading(false);
     }
   };
 
-  // ------------------------------------------------------------------
-  // UI (NO LA TOQUÉ NI CAMBIÉ TUS ESTILOS)
-  // ------------------------------------------------------------------
+
   return (
     <LinearGradient colors={["#f0f4ff", "#ffffff"]} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -229,7 +239,7 @@ export default function LoginForm() {
 
           <Text style={styles.orText}>O CONTINÚA CON</Text>
 
-          {/* ⭐ BOTÓN GOOGLE (NO CAMBIÉ ESTILO) */}
+          {/*BOTÓN GOOGLE (NO CAMBIÉ ESTILO) */}
           <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
             <Ionicons name="logo-google" size={20} color="#000" />
             <Text style={styles.googleButtonText}>Google</Text>
@@ -245,6 +255,18 @@ export default function LoginForm() {
           Plataforma segura para la gestión de gastos empresariales
         </Text>
       </ScrollView>
+
+      <ErrorModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onForgotPassword={() => {
+          setModalVisible(false);
+          router.push('/forgotPassword');
+        }}
+
+      />
     </LinearGradient>
+
+
   );
 }

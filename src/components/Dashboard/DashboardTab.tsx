@@ -235,7 +235,7 @@ export function DashboardTab() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Filtros de Fecha */}
       <View style={styles.filtersContainer}>
-        <Text style={styles.dateSectionTitle}>Rango de Fechas</Text>
+        <Text style={styles.dateSectionTitle}>Establecer rango de Fechas</Text>
         
         <View style={styles.dateSelectionContainer}>
           <View style={styles.dateInputGroup}>

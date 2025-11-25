@@ -78,7 +78,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
   const userEmail = session?.CorreoSST || "";
   const userId = session?.IdUsuarioSST || 0;
 
-  console.log("la vigencia es", userVigencia)
+  
   const handleLogout = () => {
     router.push("/login");
   };

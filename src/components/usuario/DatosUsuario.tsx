@@ -2,6 +2,7 @@ import { useSession } from "@/src/hooks/useSession";
 import { USUARIO_FINAL_UPDATE } from "@/src/services/apiConstans";
 import requests from "@/src/services/requests";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Checkbox from "expo-checkbox";
 import { router } from "expo-router";
 import { Home, User } from "lucide-react-native";
 import { useEffect, useState } from "react";
@@ -18,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 
 // --- Validaciones
 const validateApellido = (value: string) =>
@@ -39,6 +41,7 @@ export default function PersonalForm() {
     segundo_apellido: "",
     rfc: "",
     curp: "",
+    enviar_correo: false,
     direccion: {
       calle: "",
       num_exterior: "",
@@ -106,7 +109,7 @@ export default function PersonalForm() {
           ApellidoPSST: responseData.data.apellido_p || "",
           ApellidoMSST: responseData.data.apellido_m || "",
           TelefonoSST: responseData.data.telefono || "",
-          DatosCompletosSST: true, // si ya están completos los datos
+          DatosCompletosSST: true,
         });
         setStep(3); // ← mostrar step de éxito
       } else {
@@ -281,6 +284,21 @@ export default function PersonalForm() {
                   autoCapitalize="characters"
                 />
               </View>
+              <View style={[styles.field, { flexDirection: "row", alignItems: "center" }]}>
+                <Checkbox
+                  value={personalData.enviar_correo}
+                  onValueChange={(checked) =>
+                    setPersonalData((prev) => ({ ...prev, enviar_correo: checked }))
+                  }
+                  style={{ marginRight: 8 }}
+                  color={personalData.enviar_correo ? "#007AFF" : undefined}
+                />
+                <Text style={{ fontSize: 14, color: "#333" }}>
+                  ¿Deseas recibir facturas por correo?
+                </Text>
+              </View>
+
+
             </View>
           </View>
         )}
