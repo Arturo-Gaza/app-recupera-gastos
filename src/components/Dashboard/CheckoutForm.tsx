@@ -1,4 +1,6 @@
 import { useSession } from '@/src/hooks/useSession';
+import { STRIPE_CONFIRM } from '@/src/services/apiConstans';
+import requests from '@/src/services/requests';
 import {
   initPaymentSheet,
   presentPaymentSheet
@@ -51,7 +53,7 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
 
       if (error) {
         setMessage("Error al inicializar formulario de pago.");
-        
+
       }
     };
 
@@ -76,8 +78,6 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
 
     const { error } = await presentPaymentSheet();
 
-
-
     if (error) {
       setPaymentStatus('failed');
       setMessage(error.message || "El pago no se completó.");
@@ -87,17 +87,15 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
     try {
       const paymentIntentId = clientSecret.split('_secret')[0];
 
-      const confirmResponse = await fetch(
-        'http://192.168.1.171:8000/api/stripe/confirmStripePayment',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ payment_intent_id: paymentIntentId }),
-        }
-      );
+      const confirmResponse = await requests.post({
+        command: STRIPE_CONFIRM,
+        data: {
+          payment_intent_id: paymentIntentId,
+        },
+      });
 
-      const confirmData = await confirmResponse.json();
-      
+
+      const confirmData = confirmResponse.data;
 
       // -------------------------------------------
       // ACTUALIZAR SESIÓN (versión completa)
@@ -115,7 +113,7 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
         });
 
       }
-      
+
       setPaymentStatus('succeeded');
 
     } catch (err) {

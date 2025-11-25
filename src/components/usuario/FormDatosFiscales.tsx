@@ -327,7 +327,7 @@ export default function FormDatosFiscalesCompleto({
 
       if (result.success) {
         setEmailVerificar(correo);
-        
+
       }
     } catch (e) {
       console.error(e);
@@ -1332,7 +1332,7 @@ export default function FormDatosFiscalesCompleto({
                         autoCapitalize="none"
                         editable={!currentLoading}
                       />
-                      <TouchableOpacity
+                      {/* <TouchableOpacity
                         style={[
                           styles.verifyButton,
                           emailVerified && { backgroundColor: 'white', borderWidth: 1, borderColor: 'green' },
@@ -1360,7 +1360,7 @@ export default function FormDatosFiscalesCompleto({
                         ) : (
                           <Text style={styles.verifyButtonText}>Verificar</Text>
                         )}
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
 
 
                     </View>
@@ -1437,11 +1437,10 @@ export default function FormDatosFiscalesCompleto({
                   style={[
                     styles.button,
                     styles.primaryButton,
-                    currentLoading && styles.disabledButton,
-                    !emailVerified && styles.disabledButton   // <--- DESHABILITA SI NO ESTÁ VERIFICADO
+                    currentLoading && styles.disabledButton
                   ]}
                   onPress={handleNextStep}
-                  disabled={currentLoading || !emailVerified}  // <--- DESHABILITA SI NO ESTÁ VERIFICADO
+                  disabled={currentLoading}   
                 >
                   {currentLoading ? (
                     <ActivityIndicator color="#fff" size="small" />

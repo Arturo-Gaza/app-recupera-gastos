@@ -4,13 +4,13 @@ import requests from '@/src/services/requests';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import RecargasPersonales from './PlanRecargasDashboard';
 
@@ -40,32 +40,32 @@ export interface MisMovimientos {
 // Simulamos las funciones de API
 const GetMiMovimientos = async () => {
     try {
-        const response = await requests.get({ 
+        const response = await requests.get({
             command: GET_MIS_MOVIMIENTOS
         });
         return response.data;
     } catch (err) {
-        return { 
-            success: false, 
-            data: [], 
-            data2: null, 
-            message: 'Error al obtener los movimientos' 
+        return {
+            success: false,
+            data: [],
+            data2: null,
+            message: 'Error al obtener los movimientos'
         };
     }
 };
 
 const GetExportMovimientoEXCEL = async () => {
-     try {
-        const response = await requests.get({ 
+    try {
+        const response = await requests.get({
             command: MOVIMIENTO_EXPORT_EXCEL
         });
         return response.data;
     } catch (err) {
-        return { 
-            success: false, 
-            data: [], 
-            data2: null, 
-            message: 'Error al obtener los movimientos' 
+        return {
+            success: false,
+            data: [],
+            data2: null,
+            message: 'Error al obtener los movimientos'
         };
     }
 };
@@ -121,9 +121,10 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
         try {
             setLoadData(true);
             const response = await GetMiMovimientos();
-            
+
             if (response?.success) {
                 setMisMovimientos(response.data);
+                console.log("moviminetos", response.data)
             } else {
                 Alert.alert("Error", "No se pudo obtener los movimientos");
                 return;
@@ -140,7 +141,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
         try {
             setLoadDataExportExcel(true);
             const response = await GetExportMovimientoEXCEL();
-            
+
             Alert.alert('Éxito', 'Archivo Excel descargado');
         } catch (error) {
             Alert.alert("Error", "Ocurrió un error al descargar el Excel");
@@ -154,7 +155,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
         try {
             setLoadDataExportPDF(true);
             const response = await GetExportMovimientoPDF();
-            
+
             Alert.alert('Éxito', 'Archivo PDF descargado');
         } catch (error) {
             Alert.alert("Error", "Ocurrió un error al descargar el PDF");
@@ -209,6 +210,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
     const getStatusColor = (estatus: string | null) => {
         switch (estatus?.toLowerCase()) {
             case 'completado':
+                return '#f59e0b';
             case 'aprobado':
             case 'exitoso':
                 return '#10b981'; // Verde
@@ -265,7 +267,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
 
                 <Card style={styles.card}>
                     <CardContent>
-                        <RecargasPersonales/>
+                        <RecargasPersonales />
                     </CardContent>
                 </Card>
             </ScrollView>
@@ -313,77 +315,84 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
                     </View>
                 ) : (
                     <View style={styles.tableContainer}>
-                        {misMovimientos.map((movimiento, index) => (
-                            <View key={index} style={styles.movementCard}>
-                                {/* Header de la tarjeta */}
-                                <View style={styles.movementHeader}>
-                                    <Text style={styles.movementNumber}>#{movimiento.id || 'N/A'}</Text>
-                                    <View style={[
-                                        styles.typeBadge,
-                                        { backgroundColor: getMovementTypeColor(movimiento.tipo) }
-                                    ]}>
-                                        <Text style={styles.typeText}>
-                                            {getMovementTypeText(movimiento.tipo)}
-                                        </Text>
-                                    </View>
-                                </View>
+                        {misMovimientos
+                            .filter(mov => mov.payment_method_type !== null && mov.payment_method_type !== "")
+                            .map((movimiento, index) => (
 
-                                {/* Información principal */}
-                                <View style={styles.movementInfo}>
-                                    <Text style={styles.description}>
-                                        {movimiento.descripcion || 'Sin descripción'}
-                                    </Text>
-
-                                    <View style={styles.detailsRow}>
-                                        <Text style={styles.detailLabel}>Fecha:</Text>
-                                        <Text style={styles.detailValue}>
-                                            {movimiento.fecha_creacion
-                                                ? new Date(movimiento.fecha_creacion).toLocaleDateString("es-MX")
-                                                : "-"}
-                                        </Text>
-                                    </View>
-
-                                    <View style={styles.detailsRow}>
-                                        <Text style={styles.detailLabel}>Método:</Text>
-                                        <Text style={styles.detailValue}>
-                                            {movimiento.payment_method_type
-                                                ? `${movimiento.payment_method_type} (${movimiento.card_brand || ""})`
-                                                : "-"}
-                                        </Text>
-                                    </View>
-
-                                    <View style={styles.detailsRow}>
-                                        <Text style={styles.detailLabel}>Saldo anterior:</Text>
-                                        <Text style={styles.detailValue}>
-                                            {movimiento.saldo_antes
-                                                ? `$${parseFloat(movimiento.saldo_antes).toFixed(2)}`
-                                                : "$0.00"}
-                                        </Text>
-                                    </View>
-
-                                    <View style={styles.detailsRow}>
-                                        <Text style={styles.detailLabel}>Monto:</Text>
-                                        <Text style={[
-                                            styles.amount,
-                                            movimiento.tipo === 'ingreso' ? styles.amountPositive : styles.amountNegative
+                                <View key={index} style={styles.movementCard}>
+                                    {/* Header de la tarjeta */}
+                                    <View style={styles.movementHeader}>
+                                        <Text style={styles.movementNumber}>#{movimiento.id || 'N/A'}</Text>
+                                        <View style={[styles.typeBadge,
+                                            { backgroundColor: getStatusColor(movimiento.estatus)}
                                         ]}>
-                                            {movimiento.monto
-                                                ? `$${parseFloat(movimiento.monto).toFixed(2)}`
-                                                : "$0.00"}
-                                        </Text>
+                                            
+                                            <Text style={[
+                                                styles.typeText,
+                                                { color: getStatusText(movimiento.estatus) }
+                                            ]}>
+                                                {getStatusText(movimiento.estatus)}
+                                            </Text>
+                                        </View>
+
                                     </View>
 
-                                    <View style={styles.detailsRow}>
-                                        <Text style={styles.detailLabel}>Saldo resultante:</Text>
-                                        <Text style={[styles.detailValue, styles.finalBalance]}>
-                                            {movimiento.saldo_resultante
-                                                ? `$${parseFloat(movimiento.saldo_resultante).toFixed(2)}`
-                                                : "$0.00"}
+                                    {/* Información principal */}
+                                    <View style={styles.movementInfo}>
+                                        <Text style={styles.description}>
+                                            {movimiento.descripcion || 'Sin descripción'}
                                         </Text>
+
+                                        <View style={styles.detailsRow}>
+                                            <Text style={styles.detailLabel}>Fecha:</Text>
+                                            <Text style={styles.detailValue}>
+                                                {movimiento.fecha_creacion
+                                                    ? new Date(movimiento.fecha_creacion).toLocaleDateString("es-MX")
+                                                    : "-"}
+                                            </Text>
+                                        </View>
+
+                                        <View style={styles.detailsRow}>
+                                            <Text style={styles.detailLabel}>Método:</Text>
+                                            <Text style={styles.detailValue}>
+                                                {movimiento.payment_method_type
+                                                    ? `${movimiento.payment_method_type} (${movimiento.card_brand || ""})`
+                                                    : "-"}
+                                            </Text>
+                                        </View>
+
+                                        <View style={styles.detailsRow}>
+                                            <Text style={styles.detailLabel}>Saldo anterior:</Text>
+                                            <Text style={styles.detailValue}>
+                                                {movimiento.saldo_antes
+                                                    ? `$${parseFloat(movimiento.saldo_antes).toFixed(2)}`
+                                                    : "$0.00"}
+                                            </Text>
+                                        </View>
+
+                                        <View style={styles.detailsRow}>
+                                            <Text style={styles.detailLabel}>Monto:</Text>
+                                            <Text style={[
+                                                styles.amount,
+                                                movimiento.tipo === 'ingreso' ? styles.amountPositive : styles.amountNegative
+                                            ]}>
+                                                {movimiento.monto
+                                                    ? `$${parseFloat(movimiento.monto).toFixed(2)}`
+                                                    : "$0.00"}
+                                            </Text>
+                                        </View>
+
+                                        <View style={styles.detailsRow}>
+                                            <Text style={styles.detailLabel}>Saldo resultante:</Text>
+                                            <Text style={[styles.detailValue, styles.finalBalance]}>
+                                                {movimiento.saldo_resultante
+                                                    ? `$${parseFloat(movimiento.saldo_resultante).toFixed(2)}`
+                                                    : "$0.00"}
+                                            </Text>
+                                        </View>
                                     </View>
                                 </View>
-                            </View>
-                        ))}
+                            ))}
                     </View>
                 )}
             </ScrollView>

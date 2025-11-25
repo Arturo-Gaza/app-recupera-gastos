@@ -25,6 +25,7 @@ const STATUS_COLORS: Record<number, string> = {
   7: '#ef4444', // Rechazado - red-500
   8: '#6366f1', // Descargado - indigo-500
   9: '#059669', // Concluido - emerald-600
+  11: '#ef4444'
 };
 
 // Interfaces (se mantienen igual)
@@ -358,12 +359,12 @@ export function DashboardTab() {
           <View style={styles.chartHeader}>
             <Text style={styles.chartTitle}>Distribución por estatus</Text>
             <View style={styles.yearSelector}>
-              <Text style={styles.yearSelectorLabel}>Año:</Text>
-              <View style={styles.yearSelect}>
+              
+              {/* <View style={styles.yearSelect}>
                 <Text style={styles.yearSelectText}>
                   {selectedYear === 'all' ? 'Todos' : selectedYear}
                 </Text>
-              </View>
+              </View> */}
             </View>
           </View>
           

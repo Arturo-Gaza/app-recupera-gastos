@@ -1,6 +1,6 @@
 import CheckoutForm from "@/src/components/Dashboard/CheckoutForm";
 import { useSession } from "@/src/hooks/useSession";
-import { ACTIVAR_PLAN } from "@/src/services/apiConstans";
+import { ACTIVAR_PLAN, STRIPE_MENSUAL, STRIPE_PREPAGO } from "@/src/services/apiConstans";
 import requests from "@/src/services/requests";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import Constants from "expo-constants";
@@ -58,85 +58,75 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
 
   useEffect(() => {
     if (!session || sessionLoading) return;
-
     const loadPayment = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  try {
+    setLoading(true);
+    setError(null);
 
-        // Validaciones
-        if (!idRecarga || !tipoPago) {
-          throw new Error("Faltan parámetros requeridos para el pago");
+    // Validaciones
+    if (!idRecarga || !tipoPago) {
+      throw new Error("Faltan parámetros requeridos para el pago");
+    }
+
+    if (!session?.IdUsuarioSST) {
+      throw new Error("No se pudo identificar al usuario");
+    }
+
+    const validPaymentTypes = ["prepago", "postpago"];
+    if (!validPaymentTypes.includes(tipoPago)) {
+      throw new Error(`Tipo de pago no válido: ${tipoPago}`);
+    }
+
+    const isPrepago = tipoPago === "prepago";
+
+    // URL
+    const url = isPrepago
+      ? STRIPE_PREPAGO
+      :STRIPE_MENSUAL ;
+
+    // BODY
+    const body = isPrepago
+      ? {
+          idPrepago: parseInt(idRecarga),
+          id_user: session.IdUsuarioSST,
         }
+      : {
+          id_plan: parseInt(idRecarga),
+          id_user: session.IdUsuarioSST,
+        };
 
-        if (!session?.IdUsuarioSST) {
-          throw new Error("No se pudo identificar al usuario");
-        }
+    // Si NO es prepago se activa el plan
+    if (!isPrepago) {
+      await handleActivarPlan(idRecarga);
+    }
 
-        const validPaymentTypes = ["prepago", "postpago"];
-        if (!validPaymentTypes.includes(tipoPago)) {
-          throw new Error(`Tipo de pago no válido: ${tipoPago}`);
-        }
+    // Aquí usamos tu estructura post()
+    const response = await requests.post({
+      command: url,
+      data: body,
+    });
 
-        // Configurar URL y body según tipo de pago
+    const jsonData = response.data;
 
-        const isPrepago = tipoPago === "prepago";
-        const url =
-          tipoPago === "prepago"
-            ? "http://192.168.1.171:8000/api/stripe/crearPagoByPrepago"
-            : "http://192.168.1.171:8000/api/stripe/crearPagoByMensual"
+    if (!jsonData.success) {
+      throw new Error(jsonData.message || "Error al crear el pago");
+    }
 
-        const body =
-          tipoPago === "prepago"
-            ? {
-              idPrepago: parseInt(idRecarga),
-              id_user: session.IdUsuarioSST,
-            }
-            : {
-              id_plan: parseInt(idRecarga),
-              id_user: session.IdUsuarioSST,
+    if (!jsonData.data) {
+      throw new Error("No se recibió el client secret del servidor");
+    }
 
-            };
-            
-        if (!isPrepago) {
-          await handleActivarPlan(idRecarga);
-        }
+    setClientSecret(jsonData.data);
 
+  } catch (err: any) {
+    console.error("Error creando PaymentIntent:", err);
+    setError(err.message || "Error al procesar el pago");
+    Alert.alert("Error", err.message || "No se pudo inicializar el pago");
+  } finally {
+    setLoading(false);
+  }
+};
 
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-
-        const rawText = await res.text();
-
-        let jsonData;
-        try {
-          jsonData = JSON.parse(rawText);
-        } catch (parseError) {
-          console.error("Error parseando JSON:", parseError);
-          throw new Error("Error en la respuesta del servidor");
-        }
-
-        if (!res.ok || !jsonData.success) {
-          throw new Error(jsonData.message || "Error al crear el pago");
-        }
-
-        if (!jsonData.data) {
-          throw new Error("No se recibió el client secret del servidor");
-        }
-
-        setClientSecret(jsonData.data);
-
-      } catch (err: any) {
-        console.error("Error creando PaymentIntent:", err);
-        setError(err.message || "Error al procesar el pago");
-        Alert.alert("Error", err.message || "No se pudo inicializar el pago");
-      } finally {
-        setLoading(false);
-      }
-    };
 
     loadPayment();
   }, [idRecarga, tipoPago, session, sessionLoading]);

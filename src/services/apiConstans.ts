@@ -52,5 +52,8 @@ export const DATOS_FISCALES_DELETED = 'datosFiscales/eliminarReceptor/'
 export const VALIDARCANTIDADRFC = 'user/validarCantidadRFC'
 export const ENVIAR_CORREO_RECEPTOR = 'usuario/enviarCorreoValReceptor'
 export const CONFIRMAR_CODE_RECEPTOR = 'usuario/validarCorreoValReceptor'
+export const STRIPE_PREPAGO = 'stripe/crearPagoByPrepago'
+export const STRIPE_MENSUAL = 'stripe/crearPagoByMensual'
+export const STRIPE_CONFIRM = 'stripe/confirmStripePayment'
 
 
