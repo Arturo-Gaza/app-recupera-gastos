@@ -25,7 +25,7 @@ const STATUS_COLORS: Record<number, string> = {
   7: '#ef4444', // Rechazado - red-500
   8: '#6366f1', // Descargado - indigo-500
   9: '#059669', // Concluido - emerald-600
-  11: '#ef4444'
+  11: '#ef4444' // Elimindao
 };
 
 // Interfaces (se mantienen igual)

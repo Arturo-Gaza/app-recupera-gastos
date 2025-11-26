@@ -188,6 +188,7 @@ export default function LoginForm() {
             <Ionicons name="mail-outline" size={20} color="#555" style={styles.icon} />
             <TextInput
               placeholder="correo@ejemplo.com"
+              placeholderTextColor="#6B7280"
               style={styles.input}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -200,6 +201,7 @@ export default function LoginForm() {
             <Ionicons name="lock-closed-outline" size={20} color="#555" style={styles.icon} />
             <TextInput
               placeholder="Ingresa tu contraseña"
+              placeholderTextColor="#6B7280"
               style={styles.input}
               secureTextEntry={!showPassword}
               value={password}

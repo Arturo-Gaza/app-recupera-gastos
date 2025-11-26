@@ -8,7 +8,7 @@ import {
     VALIDAR_CORREO_INHABILITAR
 } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
-import { ArrowLeftIcon, Eye, EyeOff, Lock, Slash, Trash2 } from 'lucide-react-native';
+import { ArrowLeftIcon, Eye, EyeOff, Lock, Slash, Trash2, User } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -193,6 +193,7 @@ const LoadingModal = ({ isOpen, title, message }: any) => (
 export function AccountManagement({ activeSubSection, onBack }: AccountManagementProps) {
     const { session } = useSession();
     const userEmail = session?.CorreoSST;
+    const userPhone =session?.TelefonoSST;
 
     const [internalSubSection, setInternalSubSection] = useState(activeSubSection);
     const [showOtpModal, setShowOtpModal] = useState(false);
@@ -325,6 +326,57 @@ export function AccountManagement({ activeSubSection, onBack }: AccountManagemen
         handleSendDelete,
         '#DC3545'
     );
+    const renderEditSection = () => (
+        <View style={styles.section}>
+            <Text style={styles.title}>Modificar mi cuenta</Text>
+            <Card style={styles.sectionCard}>
+
+                <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Correo Electrónico</Text>
+                    <TextInput
+                        style={styles.passwordInput}
+                        // value={editEmail}
+                        // onChangeText={setEditEmail}
+                        placeholder={userEmail}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        placeholderTextColor="rgba(0,0,0,0.3)"
+                    />
+                </View>
+
+                <TouchableOpacity style={styles.buttonChange}
+                    // onPress={handlePrepareEmailChange}
+                    disabled={loading}
+                >
+                    <Text style={styles.textChange}>Cambiar</Text>
+                </TouchableOpacity>
+            </Card>
+
+            <Card style={styles.sectionCard}>
+
+                <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Teléfono</Text>
+                    <TextInput
+                        style={styles.passwordInput}
+                        // value={editEmail}
+                        // onChangeText={setEditEmail}
+                        placeholder={userPhone}
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        placeholderTextColor="rgba(0,0,0,0.3)"
+                    />
+                </View>
+
+                <TouchableOpacity style={styles.buttonChange}
+                    // onPress={handlePrepareEmailChange}
+                    disabled={loading}
+                >
+                    <Text style={styles.textChange}>Cambiar</Text>
+                </TouchableOpacity>
+            </Card>
+        </View>
+    );
+
 
     // =================== SubTabs con íconos ===================
     const AccountSubTabs = () => {
@@ -332,6 +384,8 @@ export function AccountManagement({ activeSubSection, onBack }: AccountManagemen
             { key: '/account/password', label: 'Contraseña', color: '#007bff', icon: <Lock size={16} color="#fff" /> },
             { key: '/account/block', label: 'Bloquear', color: '#FFC107', icon: <Slash size={16} color="#fff" /> },
             { key: '/account/delete', label: 'Eliminar', color: '#DC3545', icon: <Trash2 size={16} color="#fff" /> },
+            { key: '/account/edit', label: 'Modificar', color: '#045f10ff', icon: <User size={16} color="#fff" /> },
+
         ];
 
         return (
@@ -370,6 +424,8 @@ export function AccountManagement({ activeSubSection, onBack }: AccountManagemen
                 {internalSubSection === '/account/password' && renderPasswordSection()}
                 {internalSubSection === '/account/block' && renderBlockSection()}
                 {internalSubSection === '/account/delete' && renderDeleteSection()}
+                {internalSubSection === '/account/edit' && renderEditSection()}
+
 
                 {/* OTP Modal con nuevo estilo */}
                 <Modal visible={showOtpModal} transparent animationType="fade">
@@ -756,8 +812,25 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 12,
         fontSize: 16,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+        backgroundColor: "#fff",
+        color: "#000",
     },
     eyeIcon: {
         padding: 12,
     },
+    buttonChange: {
+        backgroundColor: '#1A2A6C',
+        width: 80,
+        height: 30,
+        borderRadius: 4,
+        alignItems: "center",
+        justifyContent: "center",
+        alignSelf: 'flex-end'
+    },
+    textChange: {
+        color: 'white'
+    }
 });

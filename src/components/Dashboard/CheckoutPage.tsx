@@ -5,7 +5,7 @@ import requests from "@/src/services/requests";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import Constants from "expo-constants";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Button, StyleSheet, Text, View } from "react-native";
 
 interface CheckoutPageProps {
   idRecarga: string;
@@ -19,11 +19,15 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
   const { session, loading: sessionLoading } = useSession();
   const { updateSession } = useSession();
 
-  // Obtener la Stripe API Key
-  const stripeKey = Constants.expoConfig?.extra?.stripePublishableKey ?? "";
+  // Obtener la Stripe API Key con validación mejorada
+  const stripeKey = Constants.expoConfig?.extra?.stripePublishableKey;
+
+  // Debug para verificar la clave en APK
+  useEffect(() => {
+    console.log('Stripe Key en APK:', stripeKey ? 'PRESENTE' : 'FALTANTE');
+  }, [stripeKey]);
 
   const handleActivarPlan = async (idRecarga: string) => {
-
     try {
       const response = await requests.post({
         command: ACTIVAR_PLAN + idRecarga
@@ -32,7 +36,6 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
       const responseData = response.data;
 
       if (responseData?.success) {
-
         const idPlan = responseData.data?.suscripcion?.id_plan ?? null;
         const tipoPago = responseData.data?.tipo_pago ?? null;
 
@@ -42,15 +45,80 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
           tieneSuscripcionActivaSST: true,
           DatosCompletosSST: true
         });
-
       } else {
         Alert.alert("Error", responseData?.message);
         return null;
       }
     } catch (error: any) {
-      console.error("Error:", error);
+      console.error("Error activando plan:", error);
       Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
       return null;
+    }
+  };
+
+  const loadPayment = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Validación específica para APK
+      if (!stripeKey) {
+        const errorMsg = "Error de configuración: Clave de Stripe no disponible en APK";
+        console.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      if (!idRecarga || !tipoPago) {
+        throw new Error("Faltan parámetros requeridos para el pago");
+      }
+
+      if (!session?.IdUsuarioSST) {
+        throw new Error("No se pudo identificar al usuario");
+      }
+
+      const validPaymentTypes = ["prepago", "postpago"];
+      if (!validPaymentTypes.includes(tipoPago)) {
+        throw new Error(`Tipo de pago no válido: ${tipoPago}`);
+      }
+
+      const isPrepago = tipoPago === "prepago";
+
+      const url = isPrepago ? STRIPE_PREPAGO : STRIPE_MENSUAL;
+
+      const body = isPrepago
+        ? {
+            idPrepago: parseInt(idRecarga),
+            id_user: session.IdUsuarioSST,
+          }
+        : {
+            id_plan: parseInt(idRecarga),
+            id_user: session.IdUsuarioSST,
+          };
+
+      if (!isPrepago) {
+        await handleActivarPlan(idRecarga);
+      }
+
+      const response = await requests.post({
+        command: url,
+        data: body,
+      });
+
+      const jsonData = response.data;
+
+      if (!jsonData.success) {
+        throw new Error(jsonData.message || "Error al crear el pago");
+      }
+
+      if (!jsonData.data) {
+        throw new Error("No se recibió el client secret del servidor");
+      }
+
+      setClientSecret(jsonData.data);
+
+    } catch (err: any) {
+      console.error("Error en loadPayment (APK):", err);
+      setError(err.message || "Error al procesar el pago en APK");
     } finally {
       setLoading(false);
     }
@@ -58,79 +126,16 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
 
   useEffect(() => {
     if (!session || sessionLoading) return;
-    const loadPayment = async () => {
-  try {
-    setLoading(true);
-    setError(null);
+    
+    // Timeout para prevenir bloqueos en APK
+    const timeoutId = setTimeout(() => {
+      loadPayment();
+    }, 1000);
 
-    // Validaciones
-    if (!idRecarga || !tipoPago) {
-      throw new Error("Faltan parámetros requeridos para el pago");
-    }
-
-    if (!session?.IdUsuarioSST) {
-      throw new Error("No se pudo identificar al usuario");
-    }
-
-    const validPaymentTypes = ["prepago", "postpago"];
-    if (!validPaymentTypes.includes(tipoPago)) {
-      throw new Error(`Tipo de pago no válido: ${tipoPago}`);
-    }
-
-    const isPrepago = tipoPago === "prepago";
-
-    // URL
-    const url = isPrepago
-      ? STRIPE_PREPAGO
-      :STRIPE_MENSUAL ;
-
-    // BODY
-    const body = isPrepago
-      ? {
-          idPrepago: parseInt(idRecarga),
-          id_user: session.IdUsuarioSST,
-        }
-      : {
-          id_plan: parseInt(idRecarga),
-          id_user: session.IdUsuarioSST,
-        };
-
-    // Si NO es prepago se activa el plan
-    if (!isPrepago) {
-      await handleActivarPlan(idRecarga);
-    }
-
-    // Aquí usamos tu estructura post()
-    const response = await requests.post({
-      command: url,
-      data: body,
-    });
-
-    const jsonData = response.data;
-
-    if (!jsonData.success) {
-      throw new Error(jsonData.message || "Error al crear el pago");
-    }
-
-    if (!jsonData.data) {
-      throw new Error("No se recibió el client secret del servidor");
-    }
-
-    setClientSecret(jsonData.data);
-
-  } catch (err: any) {
-    console.error("Error creando PaymentIntent:", err);
-    setError(err.message || "Error al procesar el pago");
-    Alert.alert("Error", err.message || "No se pudo inicializar el pago");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-    loadPayment();
+    return () => clearTimeout(timeoutId);
   }, [idRecarga, tipoPago, session, sessionLoading]);
 
+  // Estados de carga
   if (sessionLoading || loading) {
     return (
       <View style={styles.center}>
@@ -142,10 +147,16 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
     );
   }
 
+  // Estados de error
   if (error) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{error}</Text>
+        <Button 
+          title="Reintentar" 
+          onPress={loadPayment} 
+          color="#16a34a"
+        />
       </View>
     );
   }
@@ -154,6 +165,22 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>No se pudo generar la sesión de pago</Text>
+        <Button 
+          title="Reintentar" 
+          onPress={loadPayment} 
+          color="#16a34a"
+        />
+      </View>
+    );
+  }
+
+  // Verificación final antes de renderizar Stripe
+  if (!stripeKey) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>
+          Error crítico: Configuración de pago no disponible
+        </Text>
       </View>
     );
   }
@@ -161,12 +188,12 @@ export default function CheckoutPage({ idRecarga, tipoPago }: CheckoutPageProps)
   return (
     <StripeProvider
       publishableKey={stripeKey}
-      merchantIdentifier="merchant.com.example"
+      merchantIdentifier="merchant.com.recupergastos"
+      urlScheme="recupergastos"
     >
       <View style={styles.container}>
         <CheckoutForm
           clientSecret={clientSecret}
-        //userEmail={session?.EmailSST} // Pasar email real del usuario
         />
       </View>
     </StripeProvider>
@@ -183,6 +210,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
+    gap: 20,
   },
   loadingText: {
     marginTop: 10,
@@ -193,5 +221,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "red",
     textAlign: "center",
+    marginBottom: 20,
   },
 });

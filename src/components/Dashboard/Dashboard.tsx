@@ -78,9 +78,11 @@ export default function Dashboard({ onBack }: DashboardProps) {
   const userEmail = session?.CorreoSST || "";
   const userId = session?.IdUsuarioSST || 0;
 
-  
+
   const handleLogout = () => {
-    router.push("/login");
+  
+    // reemplaza la pantalla actual por login
+    router.replace("/login");
   };
 
   const handleTabChange = (tab: string) => {
@@ -118,9 +120,9 @@ export default function Dashboard({ onBack }: DashboardProps) {
           <TouchableOpacity style={styles.balanceButton}>
             <BadgeDollarSign size={16} color="#000" />
             {session?.TipoPagoSST === 'prepago' ? (
-                <Text style={styles.balanceText}>Saldo: ${userBalance}</Text>
-                
-            ):(
+              <Text style={styles.balanceText}>Saldo: ${userBalance}</Text>
+
+            ) : (
               <Text style={styles.balanceText}>Vigencia: {userVigencia}</Text>
             )}
 

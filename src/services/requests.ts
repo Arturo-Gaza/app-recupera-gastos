@@ -1,21 +1,31 @@
 import axiosInstance from "./axiosInstance";
 
-interface RequestData {
+interface RequestData<T = any> {
   command: string;
-  data?: any;
+  data?: T;
 }
 
 const requests = {
-  get: (data: RequestData) => axiosInstance.get(data.command),
-  getByID: (data: RequestData) => axiosInstance.post(data.command, data.data),
-  post: (data: RequestData) => {
-    const isFormData = data.data instanceof FormData;
-    return axiosInstance.post(data.command, data.data, {
-      headers: isFormData ? { "Content-Type": "multipart/form-data" } : undefined,
-      transformRequest: isFormData ? undefined : axiosInstance.defaults.transformRequest,
+  get: ({ command }: RequestData) => axiosInstance.get(command),
+
+  getByID: ({ command, data }: RequestData) =>
+    axiosInstance.post(command, data),
+
+  post: ({ command, data }: RequestData) => {
+    const isFormData = data instanceof FormData;
+
+    return axiosInstance.post(command, data, {
+      headers: {
+        ...(isFormData && { "Content-Type": "multipart/form-data" }),
+      },
+      transformRequest: isFormData
+        ? undefined
+        : axiosInstance.defaults.transformRequest,
     });
   },
-  put: (data: RequestData) => axiosInstance.put(data.command, data.data),
+
+  put: ({ command, data }: RequestData) =>
+    axiosInstance.put(command, data),
 };
 
 export default requests;

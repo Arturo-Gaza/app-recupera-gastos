@@ -124,7 +124,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
 
             if (response?.success) {
                 setMisMovimientos(response.data);
-                console.log("moviminetos", response.data)
+                
             } else {
                 Alert.alert("Error", "No se pudo obtener los movimientos");
                 return;
