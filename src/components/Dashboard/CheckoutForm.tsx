@@ -49,6 +49,7 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
         const { error } = await initPaymentSheet({
           merchantDisplayName: "Recupera Gastos",
           paymentIntentClientSecret: clientSecret,
+          customFlow: false,
           allowsDelayedPaymentMethods: false,
           returnURL: 'recupergastos://stripe-redirect',
           defaultBillingDetails: userEmail ? { email: userEmail } : undefined,
