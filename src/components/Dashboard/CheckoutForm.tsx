@@ -16,8 +16,6 @@ import {
   View
 } from 'react-native';
 
-
-
 interface CheckoutFormProps {
   clientSecret: string;
   userEmail?: string;
@@ -31,44 +29,61 @@ type PaymentStatus =
   'failed';
 
 export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormProps) {
-
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
-  const { refreshSession, updateSession } = useSession();
+  const [sheetReady, setSheetReady] = useState(false);
+  const { refreshSession, updateSession, session } = useSession();
 
+  const datos = session?.DatosCompletosSST;
+  const fiscal = session?.tienDatoFiscalSST;
+  console.log("tiene datos", datos)
 
-
-
-  // Inicializa la PaymentSheet
+  // Inicializa la PaymentSheet CORREGIDO
   useEffect(() => {
     if (!clientSecret) return;
 
     const initializeSheet = async () => {
-      const { error } = await initPaymentSheet({
-        merchantDisplayName: "Mi App",
-        allowsDelayedPaymentMethods: false,
-        paymentIntentClientSecret: clientSecret,
-      });
+      try {
+        setLoading(true);
+        const { error } = await initPaymentSheet({
+          merchantDisplayName: "Recupera Gastos",
+          paymentIntentClientSecret: clientSecret,
+          allowsDelayedPaymentMethods: false,
+          returnURL: 'recupergastos://stripe-redirect',
+          defaultBillingDetails: userEmail ? { email: userEmail } : undefined,
+        });
 
-      if (error) {
-        setMessage("Error al inicializar formulario de pago.");
 
+        if (error) {
+          console.error('Error inicializando Payment Sheet:', error);
+          setMessage("Error al inicializar formulario de pago: " + error.message);
+          setSheetReady(false);
+        } else {
+          setSheetReady(true);
+          setMessage(null);
+        }
+      } catch (err) {
+        console.error('Error en initializeSheet:', err);
+        setMessage("Error inesperado al configurar el pago");
+        setSheetReady(false);
+      } finally {
+        setLoading(false);
       }
     };
 
     initializeSheet();
   }, [clientSecret]);
 
-  // Redirección en éxito
+  // Redirección en éxito CORREGIDO
   useEffect(() => {
     if (paymentStatus === 'succeeded') {
       const timer = setTimeout(() => {
-       if (!sessionStorage.tieneSuscripcionActivaSST) {
-          router.replace("/Planes");
-        } else if (!sessionStorage.DatosCompletosSST) {
+        // Usar session en lugar de sessionStorage
+        if (datos === false) {
+        
           router.replace("/datosAlert");
-        } else if (!sessionStorage.tienDatoFiscalSST) {
+        } else if (fiscal === false){ 
           router.replace("/fiscalesAlert");
         } else {
           router.replace("/dashboard");
@@ -76,23 +91,35 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [paymentStatus]);
+  }, [paymentStatus, session]);
 
-  // Abre PaymentSheet
+  // Abre PaymentSheet CORREGIDO
   const openPaymentSheet = async () => {
+    if (!sheetReady) {
+      setMessage("El sistema de pago no está listo. Por favor espera.");
+      return;
+    }
+
     setMessage(null);
     setLoading(true);
     setPaymentStatus('processing');
 
-    const { error } = await presentPaymentSheet();
-
-    if (error) {
-      setPaymentStatus('failed');
-      setMessage(error.message || "El pago no se completó.");
-      setLoading(false);
-      return;
-    }
     try {
+      const { error } = await presentPaymentSheet();
+
+      if (error) {
+        setPaymentStatus('failed');
+        if (error.code === 'Canceled') {
+          setMessage("Pago cancelado por el usuario");
+        } else {
+          setMessage(error.message || "El pago no se completó.");
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Si llegamos aquí, el pago fue exitoso en el frontend
+      // Confirmar con el backend
       const paymentIntentId = clientSecret.split('_secret')[0];
 
       const confirmResponse = await requests.post({
@@ -102,14 +129,10 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
         },
       });
 
-
       const confirmData = confirmResponse.data;
 
-      // -------------------------------------------
-      // ACTUALIZAR SESIÓN (versión completa)
-      // -------------------------------------------
       if (confirmData?.success) {
-
+        // Actualizar sesión
         await updateSession({
           SaldoSST: confirmData.data.saldo_resultante,
           TipoPagoSST: confirmData.data.tipo_pago,
@@ -120,18 +143,18 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
           vigencia_saldo: confirmData.data.vigencia_saldo
         });
 
+        setPaymentStatus('succeeded');
+      } else {
+        throw new Error(confirmData?.message || "Error confirmando el pago");
       }
 
-      setPaymentStatus('succeeded');
-
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Error en openPaymentSheet:', err);
       setPaymentStatus('failed');
-      setMessage("Error del servidor.");
+      setMessage(err.message || "Error del servidor al confirmar el pago.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-
-
   };
 
   // Pantalla de éxito
@@ -173,20 +196,25 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
 
       {/* Card principal */}
       <View style={styles.formCard}>
-
         <View style={styles.cardSection}>
           <Text style={styles.sectionTitle}>Información de Pago</Text>
 
           {/* Botón que abre PaymentSheet */}
           <TouchableOpacity
-            style={styles.sheetButton}
+            style={[
+              styles.sheetButton,
+              !sheetReady && styles.sheetButtonDisabled
+            ]}
             onPress={openPaymentSheet}
+            disabled={!sheetReady || isProcessing}
             activeOpacity={0.85}
           >
             {isProcessing ? (
               <ActivityIndicator color="#1e293b" />
             ) : (
-              <Text style={styles.sheetButtonText}>Ingresar datos de tarjeta</Text>
+              <Text style={styles.sheetButtonText}>
+                {sheetReady ? "Ingresar datos de tarjeta" : "Configurando pago..."}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -199,6 +227,12 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
             ]}
           >
             {message}
+          </Text>
+        )}
+
+        {!sheetReady && !loading && (
+          <Text style={styles.warningText}>
+            El sistema de pago se está inicializando...
           </Text>
         )}
       </View>
@@ -218,7 +252,6 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#f6f9fc',
   },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -236,7 +269,6 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     marginTop: 50
   },
-
   formCard: {
     width: "100%",
     backgroundColor: '#fff',
@@ -248,7 +280,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-
   cardSection: { marginBottom: 25 },
   sectionTitle: {
     fontSize: 16,
@@ -256,7 +287,6 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     marginBottom: 10,
   },
-
   sheetButton: {
     backgroundColor: "#f1f5f9",
     borderRadius: 10,
@@ -265,12 +295,15 @@ const styles = StyleSheet.create({
     borderColor: "#cbd5e1",
     alignItems: "center",
   },
+  sheetButtonDisabled: {
+    backgroundColor: "#e2e8f0",
+    opacity: 0.6,
+  },
   sheetButtonText: {
     color: "#1e293b",
     fontSize: 16,
     fontWeight: "600",
   },
-
   message: {
     marginTop: 15,
     padding: 12,
@@ -290,7 +323,15 @@ const styles = StyleSheet.create({
     borderColor: '#bae6fd',
     borderWidth: 1,
   },
-
+  warningText: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#fff3cd',
+    color: '#856404',
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 14,
+  },
   securityInfo: {
     marginTop: 25,
     padding: 15,
@@ -301,7 +342,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
   },
-
   successContainer: {
     flex: 1,
     justifyContent: "center",
@@ -340,7 +380,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 5,
   },
-  //Estilo para el logo
   transparentCard: {
     backgroundColor: 'transparent',
     shadowOpacity: 0,
@@ -349,14 +388,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
     alignSelf: "center",
   },
-
   logo: {
     width: 200,
     height: 100,
     marginBottom: 30,
     marginTop: 5,
   },
-
   largeLogo: {
     width: 300 * 0.7,
     height: 150 * 0.7,
