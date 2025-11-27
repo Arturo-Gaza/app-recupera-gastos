@@ -538,6 +538,7 @@ export const TicketsTable = () => {
             <View style={styles.searchContainer}>
                 <TextInput
                     placeholder="Buscar por número de ticket o establecimiento..."
+                    placeholderTextColor="#6B7280"
                     value={searchTerm}
                     onChangeText={setSearchTerm}
                     style={styles.searchInput}
