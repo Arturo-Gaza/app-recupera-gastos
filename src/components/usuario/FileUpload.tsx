@@ -17,7 +17,7 @@ import {
 } from "react-native";
 
 interface FileUploadProps {
- onFilesUploaded?: (data: any) => void;
+  onFilesUploaded?: (data: any) => void;
   acceptedTypes?: string[];
   maxFileSize?: number;
   uploadType?: "cfdi" | "constancia";
@@ -171,20 +171,20 @@ const FileUpload = ({
         );
 
         if (allResults.length > 0) {
-  onFilesUploaded?.(allResults);
+          onFilesUploaded?.(allResults);
 
 
 
-  //Extraer el primer resultado (tu backend devuelve solo uno normalmente)
-  const fiscalResponse = allResults[0];
-  
-  setTimeout(() => {
-    router.push({
-      pathname: "/FormDatosFiscalesScreen",
-      params: { fiscalData: JSON.stringify(fiscalResponse) },
-    });
-  }, 1500);
-}
+          //Extraer el primer resultado (tu backend devuelve solo uno normalmente)
+          const fiscalResponse = allResults[0];
+
+          setTimeout(() => {
+            router.push({
+              pathname: "/FormDatosFiscalesScreen",
+              params: { fiscalData: JSON.stringify(fiscalResponse) },
+            });
+          }, 1500);
+        }
 
       } catch (error) {
         console.error("Error general:", error);
@@ -193,7 +193,7 @@ const FileUpload = ({
         setIsUploading(false);
       }
     },
-    [acceptedTypes, maxFileSize, onFilesUploaded, router, redirectTo] 
+    [acceptedTypes, maxFileSize, onFilesUploaded, router, redirectTo]
   );
 
   //Selección de archivo
@@ -208,17 +208,18 @@ const FileUpload = ({
           "application/zip",
           "text/xml",
         ],
-        multiple: true,
+        multiple: false,
       });
 
       if (result.canceled) return;
 
-      const files = result.assets.map((asset) => ({
-        name: asset.name || "archivo",
-        size: asset.size || 0,
+      const files = result.assets.map(asset => ({
+        name: asset.name ?? "archivo",
+        size: asset.size ?? 0,
         uri: asset.uri,
-        mimeType: asset.mimeType || getMimeType(asset.name || ""),
+        mimeType: asset.mimeType ?? getMimeType(asset.name ?? ""),
       }));
+
 
       await handleFiles(files);
     } catch (error) {
@@ -233,39 +234,39 @@ const FileUpload = ({
 
   return (
     <View style={styles.container}>
-        <View style={[styles.card, styles.transparentCard]}>
-                <Image
-                  source={require('@/assets/images/rg-logo.png')}
-                  style={[styles.logo, styles.largeLogo]}
-                  resizeMode="contain"
-                />
-              </View>
-     
-      <View style={styles.card}>
-         <Text style={styles.title}>{getUploadTitle()}</Text>
-          <TouchableOpacity
-        style={[styles.uploadArea, isUploading && styles.uploadAreaDisabled]}
-        onPress={handleFilePick}
-        disabled={isUploading}
-      >
-        <View style={styles.uploadIcon}>
-          {isUploading ? (
-            <ActivityIndicator size="small" color="#1A2A6C" />
-          ) : (
-            <Upload size={24} color="#1A2A6C" />
-          )}
-        </View>
+      <View style={[styles.card, styles.transparentCard]}>
+        <Image
+          source={require('@/assets/images/rg-logo.png')}
+          style={[styles.logo, styles.largeLogo]}
+          resizeMode="contain"
+        />
+      </View>
 
-        <Text style={styles.uploadTitle}>
-          {isUploading ? "Subiendo archivos..." : "Toca para seleccionar archivos"}
-        </Text>
-        <Text style={styles.uploadSubtitle}>
-          {isUploading ? "Por favor espera..." : "Selecciona archivos desde tu dispositivo"}
-        </Text>
-        <Text style={styles.uploadInfo}>
-          {getAcceptedTypesText()} {maxFileSize}MB por archivo
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.card}>
+        <Text style={styles.title}>{getUploadTitle()}</Text>
+        <TouchableOpacity
+          style={[styles.uploadArea, isUploading && styles.uploadAreaDisabled]}
+          onPress={handleFilePick}
+          disabled={isUploading}
+        >
+          <View style={styles.uploadIcon}>
+            {isUploading ? (
+              <ActivityIndicator size="small" color="#1A2A6C" />
+            ) : (
+              <Upload size={24} color="#1A2A6C" />
+            )}
+          </View>
+
+          <Text style={styles.uploadTitle}>
+            {isUploading ? "Subiendo archivos..." : "Toca para seleccionar archivos"}
+          </Text>
+          <Text style={styles.uploadSubtitle}>
+            {isUploading ? "Por favor espera..." : "Selecciona archivos desde tu dispositivo"}
+          </Text>
+          <Text style={styles.uploadInfo}>
+            {getAcceptedTypesText()} {maxFileSize}MB por archivo
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {previews.length > 0 && (
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
   },
   fileSize: { fontSize: 12, color: "#6B7280" },
   removeButton: { padding: 4 },
-   //Estilo para el logo
+  //Estilo para el logo
   transparentCard: {
     backgroundColor: 'transparent',
     shadowOpacity: 0,
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
     height: 150 * 0.8, // Más alto
     marginBottom: 30,
   },
-   card: {
+  card: {
     width: "100%",
     backgroundColor: "#fff",
     borderRadius: 12,

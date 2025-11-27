@@ -116,6 +116,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
     const [loadDataExportExcel, setLoadDataExportExcel] = useState(false);
     const { session, loading: sessionLoading } = useSession();
     const userBalance = session?.SaldoSST || "0.00";
+    const userVigencia = session?.FechaVeigenciaSST;
 
     const getMisMovimientos = async () => {
         try {
@@ -124,7 +125,7 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
 
             if (response?.success) {
                 setMisMovimientos(response.data);
-                
+
             } else {
                 Alert.alert("Error", "No se pudo obtener los movimientos");
                 return;
@@ -260,7 +261,12 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
                     <CardContent>
                         <Text style={styles.cardTitle}>Saldo Actual</Text>
                         <Text style={styles.balanceText}>
-                            ${userBalance} MXN
+                            {session?.TipoPagoSST === 'prepago' ? (
+                                <Text style={styles.balanceText}>${userBalance}</Text>
+
+                            ) : (
+                                <Text style={styles.balanceText}>Vigencia: {userVigencia}</Text>
+                            )}
                         </Text>
                     </CardContent>
                 </Card>
@@ -324,9 +330,9 @@ export function BalanceManagement({ activeSubSection }: BalanceManagementProps) 
                                     <View style={styles.movementHeader}>
                                         <Text style={styles.movementNumber}>#{movimiento.id || 'N/A'}</Text>
                                         <View style={[styles.typeBadge,
-                                            { backgroundColor: getStatusColor(movimiento.estatus)}
+                                        { backgroundColor: getStatusColor(movimiento.estatus) }
                                         ]}>
-                                            
+
                                             <Text style={[
                                                 styles.typeText,
                                                 { color: getStatusText(movimiento.estatus) }

@@ -341,6 +341,7 @@ export function AccountManagement({ activeSubSection, onBack }: AccountManagemen
                         autoCapitalize="none"
                         keyboardType="email-address"
                         placeholderTextColor="rgba(0,0,0,0.3)"
+                        editable={false}
                     />
                 </View>
 
@@ -364,6 +365,7 @@ export function AccountManagement({ activeSubSection, onBack }: AccountManagemen
                         autoCapitalize="none"
                         keyboardType="email-address"
                         placeholderTextColor="rgba(0,0,0,0.3)"
+                        editable={false}
                     />
                 </View>
 

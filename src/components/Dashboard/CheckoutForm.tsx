@@ -64,7 +64,15 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
   useEffect(() => {
     if (paymentStatus === 'succeeded') {
       const timer = setTimeout(() => {
-        router.push('/dashboard');
+       if (!sessionStorage.tieneSuscripcionActivaSST) {
+          router.replace("/Planes");
+        } else if (!sessionStorage.DatosCompletosSST) {
+          router.replace("/datosAlert");
+        } else if (!sessionStorage.tienDatoFiscalSST) {
+          router.replace("/fiscalesAlert");
+        } else {
+          router.replace("/dashboard");
+        }
       }, 2000);
       return () => clearTimeout(timer);
     }

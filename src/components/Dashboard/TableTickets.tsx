@@ -269,7 +269,7 @@ export const TicketsTable = () => {
     const getStatusText = (estadoId: number): string => {
         switch (estadoId) {
             case 1: return 'Cargado';
-            case 2: return 'Procesando';
+            case 2: return 'En Revisión';
             case 3: return 'Asignado';
             case 4: return 'Visualizado';
             case 5: return 'Procesando';
@@ -477,11 +477,7 @@ export const TicketsTable = () => {
                                 </View>
                             )}
                         </View>
-                        {isDisabled && (
-                            <Text style={styles.helperText}>
-                                Solo editable en estado "Cargado"
-                            </Text>
-                        )}
+                      
                     </View>
                 </View>
 
@@ -513,11 +509,11 @@ export const TicketsTable = () => {
                     <TouchableOpacity
                         style={[styles.actionButton, styles.processButton]}
                         onPress={() => handleFactura(item.id)}
-                        disabled={[1, 2, 3, 4, 5, 6, 7, 8, 10].includes(item.estado_id)}
+                        disabled={[1, 2, 3, 4, 5, 6, 7, 8, 10, 11].includes(item.estado_id)}
                     >
                         <CheckCircle
                             size={20}
-                            color={item.estado_id !== 1 ? "#000000ff" : "#717171ff"}
+                            color={![1, 2, 3, 4, 5, 6, 7, 8, 10, 11].includes(item.estado_id) ? "#000000ff" : "#717171ff"}
                         />
                     </TouchableOpacity>
 

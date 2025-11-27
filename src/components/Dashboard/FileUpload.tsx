@@ -1,6 +1,7 @@
 import { SOLICITUD_CREATE } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useState } from 'react';
@@ -41,7 +42,7 @@ const FileUpload = ({
   const [errorMessage, setErrorMessage] = useState('');
 
   const normalizedAccepted = Array.from(
-    new Set([...(acceptedTypes || []), '.jpeg', 'image/jpeg'])
+    new Set([...(acceptedTypes || []), '.jpeg', 'image/jpeg', 'application/pdf'])
   ).map((t) => t.toLowerCase());
 
   const handleFileValidation = (file: any): boolean => {
@@ -50,14 +51,17 @@ const FileUpload = ({
     const mime = file.mimeType?.toLowerCase() || file.type?.toLowerCase() || '';
 
     const isValidType =
-      normalizedAccepted.includes(ext) || normalizedAccepted.includes(mime);
+      normalizedAccepted.includes(ext) || 
+      normalizedAccepted.includes(mime) ||
+      (mime.includes('pdf') && normalizedAccepted.includes('.pdf'));
 
     if (!isValidType) {
       Alert.alert('Error', `Tipo de archivo no permitido: ${fileName}`);
       return false;
     }
 
-    if (file.fileSize && file.fileSize / 1024 / 1024 > maxFileSize) {
+    const fileSize = file.fileSize || file.size;
+    if (fileSize && fileSize / 1024 / 1024 > maxFileSize) {
       Alert.alert('Error', `Archivo demasiado grande: ${fileName}`);
       return false;
     }
@@ -87,10 +91,17 @@ const FileUpload = ({
     const formData = new FormData();
     formData.append('usuario_id', String(userId));
 
+    const fileExtension = file.name?.split('.').pop()?.toLowerCase() || 'jpg';
+    const mimeType = file.mimeType || file.type || 
+      (fileExtension === 'pdf' ? 'application/pdf' : 'image/jpeg');
+
+    const fileName = file.fileName || file.name || 
+      (fileExtension === 'pdf' ? `document_${Date.now()}.pdf` : `photo_${Date.now()}.jpg`);
+
     const fileData = {
       uri: file.uri,
-      type: file.mimeType || file.type || 'image/jpeg',
-      name: file.fileName || file.name || `photo_${Date.now()}.jpg`,
+      type: mimeType,
+      name: fileName,
     };
 
     formData.append('imagen', fileData as any);
@@ -169,17 +180,15 @@ const FileUpload = ({
       if (!result.canceled && result.assets.length > 0) {
         let photo = result.assets[0];
 
-        //Comprimir la imagen (por ejemplo a 60% de calidad y 800px de ancho máximo)
         const compressed = await ImageManipulator.manipulateAsync(
           photo.uri,
           [{ resize: { width: 800 } }], 
           {
-            compress: 0.5, // calidad 
+            compress: 0.5,
             format: ImageManipulator.SaveFormat.JPEG,
           }
         );
 
-        //Actualiza la referencia a la imagen comprimida
         const compressedPhoto = {
           ...photo,
           uri: compressed.uri,
@@ -194,8 +203,7 @@ const FileUpload = ({
     }
   }, [handleFiles]);
 
-
-  //Seleccionar desde galería
+  // Seleccionar desde galería
   const selectFromGallery = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -219,6 +227,33 @@ const FileUpload = ({
     }
   }, [handleFiles]);
 
+  // Seleccionar documento PDF
+  const selectDocument = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        multiple: true,
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled === false && result.assets.length > 0) {
+        // Mapear los resultados de DocumentPicker al formato esperado
+        const files = result.assets.map(asset => ({
+          uri: asset.uri,
+          name: asset.name,
+          mimeType: asset.mimeType,
+          size: asset.size,
+          type: 'application/pdf',
+        }));
+
+        handleFiles(files);
+      }
+    } catch (error) {
+      console.log('Error al seleccionar documento:', error);
+      Alert.alert('Error', 'No se pudo seleccionar el documento');
+    }
+  }, [handleFiles]);
+
   const removeFile = (index: number) => {
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
@@ -229,6 +264,7 @@ const FileUpload = ({
     Alert.alert('Seleccionar archivo', 'Elige una opción', [
       { text: 'Tomar foto', onPress: takePhoto },
       { text: 'Galería', onPress: selectFromGallery },
+      { text: 'Seleccionar PDF', onPress: selectDocument },
       { text: 'Cancelar', style: 'cancel' },
     ]);
   };
@@ -251,7 +287,7 @@ const FileUpload = ({
         </View>
         <Text style={styles.uploadTitle}>Toca para subir archivos</Text>
         <Text style={styles.uploadSubtitle}>
-          Toma una foto o selecciona desde la galería
+          Toma una foto, selecciona desde la galería o sube un PDF
         </Text>
         <Text style={styles.uploadInfo}>
           Tipos aceptados: {acceptedTypes.join(', ')} • Máx {maxFileSize}MB

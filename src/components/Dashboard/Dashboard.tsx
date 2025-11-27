@@ -81,7 +81,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
 
   const handleLogout = () => {
   
-    // reemplaza la pantalla actual por login
+    router.dismissAll();
     router.replace("/login");
   };
 
@@ -153,7 +153,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
               activeTab === "dashboard" && styles.activeTabText
             ]}
           >
-            General
+            Dashboard
           </Text>
         </TouchableOpacity>
 
