@@ -239,13 +239,13 @@ export default function LoginForm() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.orText}>O CONTINÚA CON</Text>
+          {/* <Text style={styles.orText}>O CONTINÚA CON</Text> */}
 
           {/*BOTÓN GOOGLE (NO CAMBIÉ ESTILO) */}
-          <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
+          {/* <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
             <Ionicons name="logo-google" size={20} color="#000" />
             <Text style={styles.googleButtonText}>Google</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <Text style={styles.legalText}>
             Al continuar, aceptas recibir llamadas, mensajes de WhatsApp o SMS

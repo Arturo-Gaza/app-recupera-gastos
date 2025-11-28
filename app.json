@@ -19,7 +19,11 @@
 
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.recupergastos"
+      "bundleIdentifier": "com.anonymous.recupergastos",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Necesitamos acceso para guardar tus facturas en tu dispositivo",
+        "NSPhotoLibraryAddUsageDescription": "Permitir guardar facturas (PDF y XML) en tu galería"
+      }
     },
 
     "android": {
@@ -34,7 +38,14 @@
       "package": "com.anonymous.recupergastos",
       "minSdkVersion": 24,
       "targetSdkVersion": 34,
-      "compileSdkVersion": 34
+      "compileSdkVersion": 34,
+      "permissions": [
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "ACCESS_MEDIA_LOCATION"
+      ]
     },
 
     "web": {
@@ -61,6 +72,14 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Permitir acceso para guardar facturas en tu dispositivo",
+          "savePhotosPermission": "Permitir guardar documentos fiscales (PDF y XML)",
+          "isAccessMediaLocationEnabled": true
         }
       ]
     ],

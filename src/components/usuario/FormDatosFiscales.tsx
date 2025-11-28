@@ -492,7 +492,7 @@ export default function FormDatosFiscalesCompleto({
   ];
 
   const validateApellido = (apellido: string): string | null => {
-    if (apellido.length < 2) return "El apellido debe tener al menos 2 caracteres";
+    if (apellido.length < 1) return "El apellido debe tener al menos 1 caracteres";
     return null;
   };
 

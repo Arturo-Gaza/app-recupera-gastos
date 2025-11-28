@@ -1,5 +1,5 @@
 {
-    "BASE_URL": "http://192.168.1.171:8000/api/"
+    "BASE_URL": "https://qa.iarecupera.cloud/api/api"
     
   }
   

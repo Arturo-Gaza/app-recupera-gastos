@@ -1,11 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import config from "../../app/assets/config.json";
 
+//para produccion
 const axiosInstance = axios.create({
-  baseURL: config.BASE_URL,
-  headers: {}, // 👈 importante: no forzar Content-Type global
+  baseURL: "https://qa.iarecupera.cloud/api/api",
+  headers: {},
 });
+
+// const axiosInstance = axios.create({
+//   baseURL: config.BASE_URL,
+//   headers: {}, 
+// });
 
 // Interceptor para agregar token automáticamente
 axiosInstance.interceptors.request.use(
