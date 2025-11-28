@@ -221,6 +221,7 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: 'white',
     paddingRight: 50,
+     color: "#000"
   },
   eyeIcon: {
     position: 'absolute',

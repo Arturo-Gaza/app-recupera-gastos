@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
 import EmailRegisteredModal from '../Modales/AlertModal';
 
 
@@ -154,7 +155,7 @@ export function Register() {
     }
   };
 
-  
+
 
   // FUNCIÓN OTP MEJORADA CON NAVEGACIÓN AUTOMÁTICA
   const handleOTPChange = (value: string, index: number, isEmail: boolean) => {
@@ -215,177 +216,177 @@ export function Register() {
 
   //Funcion de registrar y enviar el correo 
   // ----------------------
-// VALIDACIÓN
-// ----------------------
-const validateForm = () => {
-  if (!telefono.trim()) {
-    Alert.alert("Error", "El teléfono es obligatorio");
-    return false;
-  }
-  if (telefono.length < 10) {
-    Alert.alert("Error", "El teléfono debe tener 10 dígitos");
-    return false;
-  }
-  if (!correo.trim()) {
-    Alert.alert("Error", "El correo electrónico es obligatorio");
-    return false;
-  }
-  if (!password.trim()) {
-    Alert.alert("Error", "La contraseña es obligatoria");
-    return false;
-  }
-  if (!confirmPassword.trim()) {
-    Alert.alert("Error", "Confirmar contraseña es obligatorio");
-    return false;
-  }
-  if (password !== confirmPassword) {
-    Alert.alert("Error", "Las contraseñas no coinciden");
-    return false;
-  }
-  if (!passwordValidation.isValid) {
-    Alert.alert(
-      "Contraseña inválida",
-      "La contraseña debe cumplir con todos los requisitos"
-    );
-    return false;
-  }
-  return true;
-};
-
-// ----------------------
-// FUNCIÓN: Enviar Correo
-// ----------------------
-const sendEmailVerification = async (correo: string) => {
-  try {
-    const emailResponse = await requests.post({
-      command: ENVIARCORREOCONF,
-      data: { email: correo },
-    });
-
-    const emailData = emailResponse.data;
-
-    if (emailData?.success) {
-      console.log("Correo enviado exitosamente");
-      return true;
-    } else {
-      console.warn("Respuesta inesperada del servidor:", emailData);
+  // VALIDACIÓN
+  // ----------------------
+  const validateForm = () => {
+    if (!telefono.trim()) {
+      Alert.alert("Error", "El teléfono es obligatorio");
       return false;
     }
-  } catch (error: any) {
-    console.error("Error detallado al enviar correo:", {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-    });
-
-    if (error.response?.status === 500) {
-      Alert.alert(
-        "Problema del servidor",
-        "Estamos teniendo problemas técnicos. Intenta verificar tu correo más tarde."
-      );
-    } else {
-      Alert.alert(
-        "Error al enviar correo",
-        "No pudimos enviar el correo de verificación. Intenta más tarde."
-      );
-    }
-
-    return false;
-  }
-};
-
-// ----------------------
-// FUNCIÓN: Enviar Teléfono (SMS)
-// ----------------------
-const sendPhoneVerification = async (telefono: string) => {
-  try {
-    const phoneResponse = await requests.post({
-      command: VERIFICAR_TELEFONO,
-      data: { phone: telefono },
-    });
-
-    const phoneData = phoneResponse.data;
-
-    if (phoneData?.success) {
-      console.log("SMS enviado exitosamente");
-      return true;
-    } else {
-      console.warn("Respuesta inesperada del servidor SMS:", phoneData);
+    if (telefono.length < 10) {
+      Alert.alert("Error", "El teléfono debe tener 10 dígitos");
       return false;
     }
-  } catch (error: any) {
-    console.warn(
-      "Error al enviar SMS (continuando flujo):",
-      error?.response?.data
-    );
-    return false; // No detiene flujo
-  }
-};
-
-// ----------------------
-// FUNCIÓN PRINCIPAL
-// ----------------------
-const handleRegisterSubmit = async () => {
-  if (!validateForm()) return;
-
-  setLoading(true);
-
-  try {
-    const formData = {
-      email: correo,
-      lada: "52",
-      tel: telefono,
-      password,
-    };
-
-    const userRegister = await requests.post({
-      command: REGISTER,
-      data: formData,
-    });
-
-    const { data } = userRegister;
-
-    if (data?.success) {
-      // ------ CORREO ------
-      await sendEmailVerification(correo);
-
-      // ------ TELÉFONO ------
-      await sendPhoneVerification(telefono);
-
-      // ------ AVANZAR ------
+    if (!correo.trim()) {
+      Alert.alert("Error", "El correo electrónico es obligatorio");
+      return false;
+    }
+    if (!password.trim()) {
+      Alert.alert("Error", "La contraseña es obligatoria");
+      return false;
+    }
+    if (!confirmPassword.trim()) {
+      Alert.alert("Error", "Confirmar contraseña es obligatorio");
+      return false;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Las contraseñas no coinciden");
+      return false;
+    }
+    if (!passwordValidation.isValid) {
       Alert.alert(
-        "¡Registro Exitoso!",
-        "Se ha enviado un código de verificación a tu correo electrónico."
+        "Contraseña inválida",
+        "La contraseña debe cumplir con todos los requisitos"
       );
-
-      setCurrentStep("email");
-    } else {
-      Alert.alert("Error", data?.message || "Error en el registro");
+      return false;
     }
-  } catch (error: any) {
-    console.error("Error en el registro:", error);
+    return true;
+  };
 
-    const errorMessage = error?.response?.data?.message;
+  // ----------------------
+  // FUNCIÓN: Enviar Correo
+  // ----------------------
+  const sendEmailVerification = async (correo: string) => {
+    try {
+      const emailResponse = await requests.post({
+        command: ENVIARCORREOCONF,
+        data: { email: correo },
+      });
 
-    if (errorMessage?.includes("Correo existente")) {
-      setShowEmailRegisteredModal(true);
-    } else {
-      Alert.alert("Error", errorMessage || "Error de conexión");
+      const emailData = emailResponse.data;
+
+      if (emailData?.success) {
+        console.log("Correo enviado exitosamente");
+        return true;
+      } else {
+        console.warn("Respuesta inesperada del servidor:", emailData);
+        return false;
+      }
+    } catch (error: any) {
+      console.error("Error detallado al enviar correo:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+
+      if (error.response?.status === 500) {
+        Alert.alert(
+          "Problema del servidor",
+          "Estamos teniendo problemas técnicos. Intenta verificar tu correo más tarde."
+        );
+      } else {
+        Alert.alert(
+          "Error al enviar correo",
+          "No pudimos enviar el correo de verificación. Intenta más tarde."
+        );
+      }
+
+      return false;
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-const handleResendMail = async () => {
-  Alert.alert("Código enviado al correo", correo)
-     await sendEmailVerification(correo);
-     
+  // ----------------------
+  // FUNCIÓN: Enviar Teléfono (SMS)
+  // ----------------------
+  const sendPhoneVerification = async (telefono: string) => {
+    try {
+      const phoneResponse = await requests.post({
+        command: VERIFICAR_TELEFONO,
+        data: { phone: telefono },
+      });
+
+      const phoneData = phoneResponse.data;
+
+      if (phoneData?.success) {
+        console.log("SMS enviado exitosamente");
+        return true;
+      } else {
+        console.warn("Respuesta inesperada del servidor SMS:", phoneData);
+        return false;
+      }
+    } catch (error: any) {
+      console.warn(
+        "Error al enviar SMS (continuando flujo):",
+        error?.response?.data
+      );
+      return false; // No detiene flujo
+    }
+  };
+
+  // ----------------------
+  // FUNCIÓN PRINCIPAL
+  // ----------------------
+  const handleRegisterSubmit = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+
+    try {
+      const formData = {
+        email: correo,
+        lada: "52",
+        tel: telefono,
+        password,
+      };
+
+      const userRegister = await requests.post({
+        command: REGISTER,
+        data: formData,
+      });
+
+      const { data } = userRegister;
+
+      if (data?.success) {
+        // ------ CORREO ------
+        await sendEmailVerification(correo);
+
+        // ------ TELÉFONO ------
+        await sendPhoneVerification(telefono);
+
+        // ------ AVANZAR ------
+        Alert.alert(
+          "¡Registro Exitoso!",
+          "Se ha enviado un código de verificación a tu correo electrónico."
+        );
+
+        setCurrentStep("email");
+      } else {
+        Alert.alert("Error", data?.message || "Error en el registro");
+      }
+    } catch (error: any) {
+      console.error("Error en el registro:", error);
+
+      const errorMessage = error?.response?.data?.message;
+
+      if (errorMessage?.includes("Correo existente")) {
+        setShowEmailRegisteredModal(true);
+      } else {
+        Alert.alert("Error", errorMessage || "Error de conexión");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendMail = async () => {
+    Alert.alert("Código enviado al correo", correo)
+    await sendEmailVerification(correo);
+
   };
 
   const handleResendSMS = async () => {
     Alert.alert("Código enviado")
-     await sendPhoneVerification(telefono);
+    await sendPhoneVerification(telefono);
   };
 
 
@@ -454,6 +455,9 @@ const handleResendMail = async () => {
           placeholder="Ingresa tu contraseña"
           placeholderTextColor="rgba(0, 0, 0, 0.3)"
           secureTextEntry={!showPassword}
+          textContentType="password"  // ← Agregar esto
+          autoComplete="password"      // ← Agregar esto
+          importantForAutofill="yes"
         />
         <TouchableOpacity
           style={styles.eyeIcon}
@@ -504,6 +508,9 @@ const handleResendMail = async () => {
           placeholder="Confirma tu contraseña"
           placeholderTextColor="rgba(0, 0, 0, 0.3)"
           secureTextEntry={!showConfirmPassword}
+          textContentType="password"  // ← Agregar esto
+          autoComplete="password"      // ← Agregar esto
+          importantForAutofill="yes"
         />
         <TouchableOpacity
           style={styles.eyeIcon}
@@ -529,10 +536,16 @@ const handleResendMail = async () => {
         onPress={handleRegisterSubmit}
         disabled={loading || !passwordValidation.isValid || password !== confirmPassword}
       >
-        <Text style={styles.buttonText}>
-          {loading ? "Registrando..." : "Registrar"}
-        </Text>
+        {loading ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <ActivityIndicator size="small" color="#fff" />
+            <Text style={styles.buttonText}>Registrando...</Text>
+          </View>
+        ) : (
+          <Text style={styles.buttonText}>Registrar</Text>
+        )}
       </TouchableOpacity>
+
 
 
       <TouchableOpacity onPress={handleLoginRedirect} style={styles.linkButton}>

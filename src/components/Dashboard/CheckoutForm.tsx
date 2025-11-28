@@ -6,7 +6,7 @@ import {
   presentPaymentSheet
 } from '@stripe/stripe-react-native';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -33,13 +33,15 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
   const [message, setMessage] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
   const [sheetReady, setSheetReady] = useState(false);
-  const { refreshSession, updateSession, session } = useSession();
+  const { session, updateSession } = useSession();
+  
+  // ✅ Usar ref para evitar múltiples redirecciones
+  const hasRedirected = useRef(false);
 
   const datos = session?.DatosCompletosSST;
   const fiscal = session?.tienDatoFiscalSST;
-  console.log("tiene datos", datos)
 
-  // Inicializa la PaymentSheet CORREGIDO
+  // Inicializa la PaymentSheet
   useEffect(() => {
     if (!clientSecret) return;
 
@@ -54,7 +56,6 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
           returnURL: 'recupergastos://stripe-redirect',
           defaultBillingDetails: userEmail ? { email: userEmail } : undefined,
         });
-
 
         if (error) {
           console.error('Error inicializando Payment Sheet:', error);
@@ -76,25 +77,26 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
     initializeSheet();
   }, [clientSecret]);
 
-  // Redirección en éxito CORREGIDO
+  // ✅ Redirección SOLO cuando el pago es exitoso y no se ha redirigido antes
   useEffect(() => {
-    if (paymentStatus === 'succeeded') {
+    if (paymentStatus === 'succeeded' && !hasRedirected.current) {
+      hasRedirected.current = true;
+      
       const timer = setTimeout(() => {
-        // Usar session en lugar de sessionStorage
         if (datos === false) {
-        
           router.replace("/datosAlert");
-        } else if (fiscal === false){ 
+        } else if (fiscal === false) { 
           router.replace("/fiscalesAlert");
         } else {
           router.replace("/dashboard");
         }
       }, 2000);
+      
       return () => clearTimeout(timer);
     }
-  }, [paymentStatus, session]);
+  }, [paymentStatus]); // ✅ Solo depende de paymentStatus
 
-  // Abre PaymentSheet CORREGIDO
+  // Abre PaymentSheet
   const openPaymentSheet = async () => {
     if (!sheetReady) {
       setMessage("El sistema de pago no está listo. Por favor espera.");
@@ -119,7 +121,6 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
         return;
       }
 
-      // Si llegamos aquí, el pago fue exitoso en el frontend
       // Confirmar con el backend
       const paymentIntentId = clientSecret.split('_secret')[0];
 
@@ -200,7 +201,6 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
         <View style={styles.cardSection}>
           <Text style={styles.sectionTitle}>Información de Pago</Text>
 
-          {/* Botón que abre PaymentSheet */}
           <TouchableOpacity
             style={[
               styles.sheetButton,

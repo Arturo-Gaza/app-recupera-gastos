@@ -1,5 +1,5 @@
 import CheckoutPage from "@/src/components/Dashboard/CheckoutPage";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function CheckoutPageScreen() {
@@ -21,13 +21,6 @@ export default function CheckoutPageScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: "Pagar",
-          headerShown: false,
-        }}
-      />
-
       <CheckoutPage 
         idRecarga={idRecarga}
         tipoPago={tipoPago}

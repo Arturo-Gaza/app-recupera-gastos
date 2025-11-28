@@ -147,6 +147,11 @@ const RecargasPersonales = () => {
 
     const handlePlanSelect = async (planId: string) => {
         // Navegar a la pantalla de pago con el plan seleccionado
+          if (!planId) {
+            console.log("No viene planId en los parámetros");
+        } else {
+            await handleActivarPlan(String(planId));
+        }
         router.push({
             pathname: '/pagoStripe',
             params: {

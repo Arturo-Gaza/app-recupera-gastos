@@ -14,6 +14,7 @@ import {
 
 import { useCallback, useState } from "react";
 import {
+  BackHandler,
   Image,
   ScrollView,
   Text,
@@ -80,7 +81,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
 
 
   const handleLogout = () => {
-  
+
     router.dismissAll();
     router.replace("/login");
   };
@@ -91,6 +92,18 @@ export default function Dashboard({ onBack }: DashboardProps) {
   };
 
   const handleFilesUploaded = () => { };
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        () => true
+      );
+
+      return () => backHandler.remove();
+    }, [])
+  );
+
+
 
 
   const Header = () => (

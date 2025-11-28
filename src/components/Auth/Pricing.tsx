@@ -1,12 +1,10 @@
 import { useSession } from '@/src/hooks/useSession';
-import { ACTIVAR_PLAN, GET_ALL_PLANES } from '@/src/services/apiConstans';
+import { GET_ALL_PLANES } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
-import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Dimensions,
     Image,
     SafeAreaView,
@@ -81,7 +79,7 @@ const GetAllPlanes = async (): Promise<ApiResponse> => {
 };
 
 const ActivarPlan = async (planId: string): Promise<ApiResponse> => {
-    
+
     return { success: true, data: [], data2: null, message: 'Plan activado' };
 };
 
@@ -94,7 +92,6 @@ const Pricing: React.FC = () => {
     const [mode, setMode] = useState<"personal" | "empresarial">("personal");
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollViewRef = useRef<ScrollView>(null);
-    const navigation = useNavigation();
     const { width: screenWidth } = Dimensions.get('window');
     const cardWidth = screenWidth * 0.8 + 20;
     const [contenidoHooks, setContenidoHooks] = useState({});
@@ -108,7 +105,7 @@ const Pricing: React.FC = () => {
             try {
                 setLoading(true);
                 const response = await GetAllPlanes();
-                
+
                 if (response.success && response.data) setPlans(response.data);
 
                 else throw new Error(response.message);
@@ -141,7 +138,7 @@ const Pricing: React.FC = () => {
         setCurrentIndex(0);
     };
 
-   
+
 
     //funcion que manda a pantalla de recargas
     const handleButtonClick = async (planId: string, tipoPago: string) => {
@@ -157,7 +154,11 @@ const Pricing: React.FC = () => {
                 params: { planId }
             });
         } else if (tipoPago === "postpago") {
-            router.push({
+            console.log("EL PAGO ES POSTPAGO");
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            router.replace({
                 pathname: '/pagoStripe',
                 params: {
                     idRecarga: planId,

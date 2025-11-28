@@ -2,8 +2,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
 //para produccion
+// const axiosInstance = axios.create({
+//   baseURL: "https://qa.iarecupera.cloud/api/api",
+//   headers: {},
+// });
+
+
+//para local pero en apk
 const axiosInstance = axios.create({
-  baseURL: "https://qa.iarecupera.cloud/api/api",
+  baseURL: "http://192.168.1.171:8000/api/",
   headers: {},
 });
 
