@@ -12,25 +12,23 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  const stripeKey = Constants.expoConfig?.extra?.stripePublishableKey;
+  // Obtén la clave de Stripe desde app.json / app.config.js
+  const stripeKey = Constants?.expoConfig?.extra?.stripePublishableKey ?? "";
 
   return (
     <StripeProvider
-      publishableKey={stripeKey ?? ""}
-      merchantIdentifier="merchant.com.recupergastos"
-      urlScheme="recupergastos"
+      publishableKey={stripeKey}
+      merchantIdentifier="merchant.com.recupergastos" // requerido para Apple Pay
+      urlScheme="recupergastos" // deep linking para 3D Secure
     >
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="register" options={{ headerShown: false }} />
-
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-
-          <Stack.Screen name="Planes" options={{ headerShown: false }} />
-
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="login" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(dashboard)" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="Planes" />
           <Stack.Screen
             name="modal"
             options={{ presentation: "modal", title: "Modal" }}

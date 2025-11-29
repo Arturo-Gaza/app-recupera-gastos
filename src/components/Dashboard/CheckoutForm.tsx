@@ -34,12 +34,16 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
   const [sheetReady, setSheetReady] = useState(false);
   const { session, updateSession } = useSession();
-  
+
   // ✅ Usar ref para evitar múltiples redirecciones
   const hasRedirected = useRef(false);
 
-  const datos = session?.DatosCompletosSST;
-  const fiscal = session?.tienDatoFiscalSST;
+  const datosActualizados = session?.DatosCompletosSST;
+  const fiscalActualizado = session?.tienDatoFiscalSST;
+  console.log("datos actualizados fuera del useEffect:", datosActualizados);
+  console.log("fiscal actualizado fuera del useEfect:", fiscalActualizado);
+
+
 
   // Inicializa la PaymentSheet
   useEffect(() => {
@@ -78,24 +82,29 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
   }, [clientSecret]);
 
   // ✅ Redirección SOLO cuando el pago es exitoso y no se ha redirigido antes
-  useEffect(() => {
-    if (paymentStatus === 'succeeded' && !hasRedirected.current) {
-      hasRedirected.current = true;
-      
-      const timer = setTimeout(() => {
-        if (datos === false) {
-          router.replace("/datosAlert");
-        } else if (fiscal === false) { 
-          router.replace("/fiscalesAlert");
-        } else {
-          router.replace("/dashboard");
-        }
-      }, 2000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [paymentStatus]); // ✅ Solo depende de paymentStatus
+ useEffect(() => {
+  if (paymentStatus === 'succeeded' && session && !hasRedirected.current) {
+    hasRedirected.current = true;
 
+    const datosActualizados = session.DatosCompletosSST ?? false;
+    const fiscalActualizado = session.tienDatoFiscalSST ?? false;
+
+    console.log("datos actualizados dentro del useEffect:", datosActualizados);
+    console.log("fiscal actualizado dentro del useEffect:", fiscalActualizado);
+
+    const timer = setTimeout(() => {
+      if (!datosActualizados) {
+        router.replace("/datosAlert");
+      } else if (!fiscalActualizado) { 
+        router.replace("/fiscalesAlert");
+      } else {
+        router.replace("/dashboard");
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }
+}, [paymentStatus, session]);
   // Abre PaymentSheet
   const openPaymentSheet = async () => {
     if (!sheetReady) {
@@ -139,10 +148,11 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
           SaldoSST: confirmData.data.saldo_resultante,
           TipoPagoSST: confirmData.data.tipo_pago,
           tieneSuscripcionActivaSST: confirmData.data.is_subscription,
-          DatosCompletosSST: confirmData.data.datos_completos,
-          tienDatoFiscalSST: confirmData.data.datos_fiscales,
+          DatosCompletosSST: confirmData.data.datosCompletos,
+          tienDatoFiscalSST: confirmData.data.tienDatoFiscal,
           FechaVeigenciaSST: confirmData.data.fecha_vencimiento,
-          vigencia_saldo: confirmData.data.vigencia_saldo
+          vigencia_saldo: confirmData.data.vigencia_saldo,
+          
         });
 
         setPaymentStatus('succeeded');

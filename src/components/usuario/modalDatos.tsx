@@ -27,6 +27,7 @@ const InfoForm: React.FC<InfoFormProps> = ({ onSubmit, onLater, loading = false 
 
     const handleLater = () => {
         if(session?.tienDatoFiscalSST === false){
+            console.log("que sesion trae", session?.tienDatoFiscalSST)
             router.push("/fiscalesAlert");
         }else{
             router.push("/dashboard")
