@@ -126,7 +126,7 @@ export function Register() {
 
   const handleSMSSubmit = async () => {
     const code = otpSMS.join('');
-
+    setLoading(true)
     try {
       const response = await requests.post({
         command: VALIDAR_CODIGO_SMS,

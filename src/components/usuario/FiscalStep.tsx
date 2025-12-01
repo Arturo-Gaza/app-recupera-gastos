@@ -759,7 +759,7 @@ export default function FiscalStep({
               color="#1A2A6C"
             />
             <Text style={styles.checkboxLabel}>
-              Configurar como registro predeterminado
+              Configurar como registro predeterminado 2
             </Text>
           </View>
         </View>

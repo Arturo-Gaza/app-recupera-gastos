@@ -22,17 +22,17 @@ const InfoForm: React.FC<InfoFormProps> = ({ onSubmit, onLater, loading = false 
 
     const handleInfoSubmit = () => {
         onSubmit?.();
-         router.push('/DatosPersonales'); 
+        router.push('/DatosPersonales');
     };
 
     const handleLater = () => {
-        if(session?.tienDatoFiscalSST === false){
+        if (session?.tienDatoFiscalSST === false) {
             console.log("que sesion trae", session?.tienDatoFiscalSST)
             router.push("/fiscalesAlert");
-        }else{
+        } else {
             router.push("/dashboard")
         }
-         
+
     };
 
     return (
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
         //backgroundColor: '#f5f5f5',
         padding: 16,
         marginTop: 150,
-        borderColor: "black" 
+        borderColor: "black"
     },
     title: {
         fontSize: 18,
@@ -158,6 +158,8 @@ const styles = StyleSheet.create({
         color: '#374151',
         fontWeight: 'bold',
         fontSize: 14,
+        textAlign: "center",
+        textAlignVertical: "center",
     },
     submitButtonText: {
         color: '#fff',

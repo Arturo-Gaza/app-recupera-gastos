@@ -824,6 +824,7 @@ export default function FormDatosFiscalesCompleto({
 
   // Handler para actualizar registro existente
   const handleUpdate = async () => {
+    setLoading(true)
     setInternalLoading(true);
 
     try {
@@ -850,6 +851,7 @@ export default function FormDatosFiscalesCompleto({
       Alert.alert('Error', message);
     } finally {
       setInternalLoading(false);
+      setLoading(false)
     }
   };
 
@@ -1125,7 +1127,7 @@ export default function FormDatosFiscalesCompleto({
         {/* STEP 1: DATOS FISCALES */}
         {currentStep === 'datos' && (
           <>
-            {/* ✅ MODIFICADO: Mostrar información de edición */}
+            {/* MODIFICADO: Mostrar información de edición */}
             {modo === 'edicion' && (
               <View style={styles.card}>
                 <View style={styles.sectionHeader}>
@@ -1465,7 +1467,7 @@ export default function FormDatosFiscalesCompleto({
                     currentLoading && styles.disabledButton
                   ]}
                   onPress={handleNextStep}
-                  disabled={currentLoading}   
+                  disabled={currentLoading}
                 >
                   {currentLoading ? (
                     <ActivityIndicator color="#fff" size="small" />
@@ -1543,6 +1545,7 @@ export default function FormDatosFiscalesCompleto({
                     value={thirdPartyData.fecha_inicio_op}
                     onChangeText={(text) => setThirdPartyData(prev => ({ ...prev, fecha_inicio_op: text }))}
                     placeholder="YYYY-MM-DD"
+                    placeholderTextColor="rgba(0, 0, 0, 0.3)"
                   />
                 </View>
 
@@ -1573,6 +1576,7 @@ export default function FormDatosFiscalesCompleto({
                     value={thirdPartyData.fecha_emision}
                     onChangeText={(text) => setThirdPartyData(prev => ({ ...prev, fecha_emision: text }))}
                     placeholder="YYYY-MM-DD"
+                    placeholderTextColor="rgba(0, 0, 0, 0.3)"
                   />
                 </View>
               </View>
@@ -1633,7 +1637,7 @@ export default function FormDatosFiscalesCompleto({
         onVerificationSuccess={handleVerificationSuccess}
         onSuccess={() => setEmailVerified(true)}
       />
-       {renderGlobalLoading()}
+      {renderGlobalLoading()}
     </View>
   );
 }
@@ -1703,6 +1707,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#1f2937',
+    textAlign: 'left',
+    flex: 1,            
+    flexShrink: 1,      
+    flexWrap: 'wrap',
   },
   section: {
     marginBottom: 24,
@@ -1780,6 +1788,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#fff',
+    textAlign: 'center'
   },
   // Estilos para información del tercero
   infoContainer: {

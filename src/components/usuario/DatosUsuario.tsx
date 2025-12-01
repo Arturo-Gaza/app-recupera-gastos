@@ -28,6 +28,10 @@ const validateApellido = (value: string) =>
 const validateRFC = (rfc: string) =>
   /^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/.test(rfc.toUpperCase());
 
+const validateCURP = (curp: string) =>
+  /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]{2}$/.test(curp.toUpperCase());
+
+
 const validatePostalCode = (cp: string) =>
   !/^\d{5}$/.test(cp) ? "Debe tener 5 dígitos" : "";
 
@@ -159,7 +163,7 @@ export default function PersonalForm() {
               style={[styles.button, { flex: 1, backgroundColor: "#fff", borderWidth: 1, borderColor: "#1A2A6C" }]}
               onPress={() => router.replace("/dashboard")}
             >
-              <Text style={{ color: "#1A2A6C", fontWeight: "bold" }}>Lo haré después</Text>
+              <Text style={{ color: "#1A2A6C", fontWeight: "bold", textAlign: 'center' }}>Lo haré después</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -167,7 +171,7 @@ export default function PersonalForm() {
               onPress={() => router.push('/metodoRegistroFiscal')}
               disabled={loading}
             >
-              <Text style={{ color: "#FFF", fontWeight: "bold" }}>¡Completar Datos Fiscales Ahora!</Text>
+              <Text style={{ color: "#FFF", fontWeight: "bold", textAlign: 'center' }}>¡Completar Datos Fiscales Ahora!</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -277,7 +281,7 @@ export default function PersonalForm() {
                   value={personalData.rfc}
                   placeholderTextColor="rgba(0, 0, 0, 0.3)"
                   onChangeText={(value) =>
-                    setPersonalData((prev) => ({ ...prev, rfc: value.toUpperCase() }))
+                    setPersonalData((prev) => ({ ...prev, rfc: value.toUpperCase(), curp: value.toUpperCase() }))
                   }
                   placeholder="XXXX000000XXX"
                   maxLength={13}
@@ -303,6 +307,10 @@ export default function PersonalForm() {
                   maxLength={18}
                   autoCapitalize="characters"
                 />
+                {personalData.curp && !validateCURP(personalData.curp) && (<Text style={styles.errorText}>
+                  CURP inválido: estructura 18 caracteres (AAAAAAMMDDHMECCCNN)
+                </Text>
+                )}
               </View>
               <View style={[styles.field, { flexDirection: "row", alignItems: "center" }]}>
                 <Checkbox
@@ -312,6 +320,7 @@ export default function PersonalForm() {
                   }
                   style={{ marginRight: 8 }}
                   color={personalData.enviar_correo ? "#007AFF" : undefined}
+
                 />
                 <Text style={{ fontSize: 14, color: "#333" }}>
                   ¿Deseas recibir facturas por correo?
@@ -344,6 +353,7 @@ export default function PersonalForm() {
                 <View key={key} style={styles.field}>
                   <Text style={styles.label}>
                     {key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ")}
+                    {key === "codigo_postal" && <Text style={{ color: "black" }}> *</Text>}
                   </Text>
                   <TextInput
                     style={styles.input}
@@ -392,7 +402,7 @@ export default function PersonalForm() {
           </View>
         )}
       </ScrollView>
-       {renderGlobalLoading()}
+      {renderGlobalLoading()}
     </KeyboardAvoidingView>
   );
 }
