@@ -510,6 +510,7 @@ const styles = StyleSheet.create({
         color: '#ffffffff',
         fontSize: 16,
         fontWeight: '500',
+        alignItems: 'center'
     },
 });
 

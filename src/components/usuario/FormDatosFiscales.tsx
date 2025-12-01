@@ -20,6 +20,7 @@ import { Checkbox } from 'react-native-paper';
 import { useSession } from '../../hooks/useSession';
 import EmailVerificationModal from '../Modales/EmailVerificar';
 
+
 // ========== INTERFACES ==========
 interface DomicilioFiscal {
   calle?: string;
@@ -255,6 +256,7 @@ export default function FormDatosFiscalesCompleto({
 }: FormDatosFiscalesCompletoProps) {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const [loading, setLoading] = useState(false);
 
   // Estados para el formulario de datos fiscales
   const [thirdPartyData, setThirdPartyData] = useState<ThirdPartyData>({
@@ -512,7 +514,7 @@ export default function FormDatosFiscalesCompleto({
   };
 
   const validateAddress = (address: string): string | null => {
-    if (address.length < 2) return "La dirección debe tener al menos 2 caracteres";
+    if (address.length < 1) return "La dirección debe tener al menos 1 caracteres";
     return null;
   };
 
@@ -1068,6 +1070,29 @@ export default function FormDatosFiscalesCompleto({
     );
   };
 
+  // Overlay global de loading
+  const renderGlobalLoading = () => (
+    loading ? (
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 999
+      }}>
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={{ color: 'white', marginTop: 10, fontSize: 16 }}>
+          Procesando...
+        </Text>
+      </View>
+    ) : null
+  );
+
+
   // ========== RENDER PRINCIPAL ==========
   return (
     <View style={styles.container}>
@@ -1194,7 +1219,7 @@ export default function FormDatosFiscalesCompleto({
                       placeholderTextColor="rgba(0, 0, 0, 0.3)"
                       onChangeText={(text) => setThirdPartyData(prev => ({
                         ...prev,
-                        nombre_razon: normalizeText(text)
+                        nombre_razon: text
                       }))}
                       maxLength={100}
                       placeholder={thirdPartyData.es_persona_moral ? 'Razón Social' : 'Nombre(s)'}
@@ -1213,7 +1238,7 @@ export default function FormDatosFiscalesCompleto({
                           placeholderTextColor="rgba(0, 0, 0, 0.3)"
                           onChangeText={(text) => setThirdPartyData(prev => ({
                             ...prev,
-                            primer_apellido: normalizeText(text)
+                            primer_apellido: text
                           }))}
                           maxLength={99}
                           placeholder="Primer Apellido"
@@ -1234,7 +1259,7 @@ export default function FormDatosFiscalesCompleto({
                           placeholderTextColor="rgba(0, 0, 0, 0.3)"
                           onChangeText={(text) => setThirdPartyData(prev => ({
                             ...prev,
-                            segundo_apellido: normalizeText(text)
+                            segundo_apellido: text
                           }))}
                           maxLength={99}
                           placeholder="Segundo Apellido"
@@ -1259,7 +1284,7 @@ export default function FormDatosFiscalesCompleto({
                         placeholderTextColor="rgba(0, 0, 0, 0.3)"
                         onChangeText={(text) => setThirdPartyData(prev => ({
                           ...prev,
-                          nombre_comercial: normalizeText(text)
+                          nombre_comercial: text
                         }))}
                         maxLength={200}
                         placeholder="Nombre Comercial"
@@ -1392,7 +1417,7 @@ export default function FormDatosFiscalesCompleto({
                             const numericValue = text.replace(/\D/g, '').substring(0, 5);
                             updateDomicilioFiscal(key, numericValue);
                           } else {
-                            updateDomicilioFiscal(key, normalizeText(text));
+                            updateDomicilioFiscal(key, text);
                           }
                         }}
                         maxLength={maxLength}
@@ -1608,6 +1633,7 @@ export default function FormDatosFiscalesCompleto({
         onVerificationSuccess={handleVerificationSuccess}
         onSuccess={() => setEmailVerified(true)}
       />
+       {renderGlobalLoading()}
     </View>
   );
 }

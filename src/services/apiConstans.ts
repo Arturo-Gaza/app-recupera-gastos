@@ -55,5 +55,6 @@ export const CONFIRMAR_CODE_RECEPTOR = 'usuario/validarCorreoValReceptor'
 export const STRIPE_PREPAGO = 'stripe/crearPagoByPrepago'
 export const STRIPE_MENSUAL = 'stripe/crearPagoByMensual'
 export const STRIPE_CONFIRM = 'stripe/confirmStripePayment'
+export const COMPLETAR_HIJO = 'auth/completarHijo'
 
 

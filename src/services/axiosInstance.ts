@@ -3,7 +3,7 @@ import axios from "axios";
 
 //para produccion
 // const axiosInstance = axios.create({
-//   baseURL: "https://qa.iarecupera.cloud/api/api",
+//   baseURL: "https://qauf.iarecupera.cloud/api/api/",
 //   headers: {},
 // });
 
