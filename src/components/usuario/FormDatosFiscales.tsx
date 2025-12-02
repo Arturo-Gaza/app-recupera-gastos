@@ -1,4 +1,4 @@
-import { CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN, DATOS_FISCALES_CREATE, DATOS_FISCALES_UPDATE, ENVIAR_CORREO_RECEPTOR } from '@/src/services/apiConstans';
+import { CATALOGO_REGIMEN_FISCALES_GET_BY_BOOLEAN, DATOS_FISCALES_CREATE, DATOS_FISCALES_UPDATE, ENVIAR_CORREO_RECEPTOR, VALIDA_RFC_CURP } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle, ChevronDown, ChevronUp, FileText, Home, Receipt, User } from 'lucide-react-native';
@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 import { useSession } from '../../hooks/useSession';
-import EmailVerificationModal from '../Modales/EmailVerificar';
 
 
 // ========== INTERFACES ==========
@@ -301,7 +300,10 @@ export default function FormDatosFiscalesCompleto({
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [email, setEmail] = useState('');
   const [EmailVerificar, setEmailVerificar] = useState('');
-  const [emailVerified, setEmailVerified] = useState(false);
+  const [rfcVerified, setRfcVerified] = useState(false);
+  const [curpVerified, setCurpVerified] = useState(false);
+
+
 
 
   const idUser = session?.IdUsuarioSST;
@@ -480,6 +482,110 @@ export default function FormDatosFiscalesCompleto({
       [{ text: 'Continuar' }]
     );
   };
+
+  /// ======= Funcion para llenar datos con RFC
+  const validarRFC = (apiData: any) => {
+    // Extraer los datos del formato de respuesta API
+    const data = apiData.data || apiData;
+
+    setThirdPartyData({
+      es_persona_moral: data.es_persona_moral || false,
+      nombre_razon: data.nombre_razon || '',
+      primer_apellido: data.primer_apellido || '',
+      segundo_apellido: data.segundo_apellido || '',
+      nombre_comercial: data.nombre_comercial || '',
+      rfc: data.rfc || '',
+      curp: data.curp || '',
+      email_facturacion_text: data.email_facturacion_text || '',
+      fecha_inicio_op: data.fecha_inicio_op || '',
+      fecha_emision: data.fecha_emision || '',
+      lugar_emision: data.lugar_emision || '',
+      id_estatus_sat: data.id_estatus_sat || 1,
+      predeterminado: data.predeterminado ?? true,
+      idCIF: data.idCIF || '',
+      domicilioFiscal: {
+        calle: data.domicilioFiscal?.calle || '',
+        num_exterior: data.domicilioFiscal?.num_exterior || '',
+        num_interior: data.domicilioFiscal?.num_interior || '',
+        codigo_postal: data.domicilioFiscal?.codigo_postal || '',
+        colonia: data.domicilioFiscal?.colonia || '',
+        localidad: data.domicilioFiscal?.localidad || '',
+        municipio: data.domicilioFiscal?.municipio || '',
+        estado: data.domicilioFiscal?.estado || '',
+        pais: data.domicilioFiscal?.pais || 'México'
+      }
+    });
+
+    // Si hay regímenes fiscales en la respuesta
+    if (data.regimenesFiscales && data.regimenesFiscales.length > 0) {
+      const selectedRegimens: SelectedRegimen[] = data.regimenesFiscales.map((regimen: any) => ({
+        id_regimen: regimen.id_regimen,
+        fecha_inicio_regimen: regimen.fecha_inicio_regimen || data.fecha_inicio_op || new Date().toISOString().split('T')[0],
+        predeterminado: regimen.predeterminado || false,
+        usosCfdi: regimen.usosCfdi || []
+      }));
+      setSelectedRegimens(selectedRegimens);
+    }
+
+    // Mostrar mensaje de éxito
+    Alert.alert(
+      'Datos fiscales obtenidos',
+      `Se han cargado los datos fiscales de:\n\nRFC: ${data.rfc || 'N/A'}\nNombre: ${data.nombre_razon || 'N/A'}`,
+      [{ text: 'Continuar' }]
+    );
+  };
+
+  // En tu componente
+  const fetchFiscalDataRFC = async () => {
+    setLoading(true)
+    try {
+      const response = await requests.post({
+        command: VALIDA_RFC_CURP,
+        data: {
+          termino: thirdPartyData.rfc
+
+        }
+      });
+
+      if (response.data.success) {
+        await validarRFC(response.data);
+        setRfcVerified(true);
+      } else {
+        Alert.alert('Error', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching fiscal data:', error);
+      Alert.alert('Error', 'No se pudieron obtener los datos fiscales');
+    } finally {
+      setLoading(false)
+    }
+  };
+
+  const fetchFiscalDataCURP = async () => {
+    setLoading(true)
+    try {
+      const response = await requests.post({
+        command: VALIDA_RFC_CURP,
+        data: {
+          termino: thirdPartyData.curp
+
+        }
+      });
+
+      if (response.data.success) {
+        await validarRFC(response.data);
+        setCurpVerified(true);
+      } else {
+        Alert.alert('Error', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching fiscal data:', error);
+      Alert.alert('Error', 'No se pudieron obtener los datos fiscales');
+    } finally {
+      setLoading(false)
+    }
+  };
+
 
   // ========== FUNCIONES PARA DATOS FISCALES ==========
   const domicilioFields = [
@@ -1209,6 +1315,147 @@ export default function FormDatosFiscalesCompleto({
                   </Text>
                 </View>
 
+                {/* RFC */}
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>RFC *</Text>
+
+                    {/* FILA: Input + Botón/Check */}
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+
+                      <TextInput
+                        style={[styles.input, { flex: 1 }]}
+                        value={thirdPartyData.rfc}
+                        onChangeText={handleRFCChange}
+                        placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                        placeholder="XXXX000000XXX"
+                        maxLength={thirdPartyData.es_persona_moral === true ? 12 : 13}
+                        editable={!currentLoading}
+                        autoCapitalize="characters"
+                      />
+
+                      {/* BOTÓN O CHECK A LA DERECHA */}
+                      {rfcVerified ? (
+                        <CheckCircle
+                          size={28}
+                          color="green"
+                          style={{ marginLeft: 10 }}
+                        />
+                      ) : (
+                        <TouchableOpacity
+                          style={[
+                            styles.verifyButton,
+                            { marginLeft: 10 },
+
+                            // RFC válido → azul
+                            thirdPartyData.rfc &&
+                            validateRFC(thirdPartyData.rfc, thirdPartyData.es_persona_moral) && {
+                              backgroundColor: "#007BFF",
+                              borderColor: "#007BFF",
+                            },
+
+                            // RFC inválido → azul claro
+                            (!thirdPartyData.rfc ||
+                              !validateRFC(thirdPartyData.rfc, thirdPartyData.es_persona_moral)) &&
+                            styles.verifyButtonDisabled
+                          ]}
+                          onPress={async () => {
+                            await fetchFiscalDataRFC(); // validar RFC contra API
+                          }}
+                        >
+                          <Text style={styles.verifyButtonText}>Verificar</Text>
+                        </TouchableOpacity>
+                      )}
+
+                    </View>
+
+                    {/* Mensaje de error debajo del Input */}
+                    {thirdPartyData.rfc &&
+                      !validateRFC(thirdPartyData.rfc, thirdPartyData.es_persona_moral) && (
+                        <Text style={styles.errorText}>
+                          {thirdPartyData.es_persona_moral
+                            ? "Formato inválido: 3 letras + fecha real (AAMMDD) + 3 caracteres"
+                            : "Formato inválido: 4 letras + fecha real (AAMMDD) + 3 caracteres"}
+                        </Text>
+                      )}
+                  </View>
+
+
+
+                  {/* CURP para persona física */}
+                  {!thirdPartyData.es_persona_moral && (
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>CURP</Text>
+
+                      {/* FILA: Input + Botón/Check */}
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+
+                        <TextInput
+                          style={[styles.input, { flex: 1 }]}
+                          value={thirdPartyData.curp}
+                          placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                          onChangeText={(text) =>
+                            setThirdPartyData((prev) => ({
+                              ...prev,
+                              curp: normalizeText(text),
+                            }))
+                          }
+                          placeholder="XXXX000000XXXXXXXX (opcional)"
+                          maxLength={18}
+                          editable={!currentLoading}
+                          autoCapitalize="characters"
+                        />
+
+                        {/* BOTÓN O CHECK */}
+                        {curpVerified ? (
+                          <CheckCircle size={28} color="green" style={{ marginLeft: 10 }} />
+                        ) : (
+                          <TouchableOpacity
+                            disabled={
+                              !thirdPartyData.curp ||
+                              !validateCURPWithRFC(thirdPartyData.curp, thirdPartyData.rfc).isValid ||
+                              loading
+                            }
+                            style={[
+                              styles.verifyButton,
+                              { marginLeft: 10 },
+
+                              // Si CURP válida → azul
+                              thirdPartyData.curp &&
+                              validateCURPWithRFC(
+                                thirdPartyData.curp,
+                                thirdPartyData.rfc
+                              ).isValid && {
+                                backgroundColor: "#007BFF",
+                                borderColor: "#007BFF",
+                              },
+
+                              // Si CURP vacía o inválida → azul claro (deshabilitado)
+                              (!thirdPartyData.curp ||
+                                !validateCURPWithRFC(
+                                  thirdPartyData.curp,
+                                  thirdPartyData.rfc
+                                ).isValid) && styles.verifyButtonDisabled,
+                            ]}
+                            onPress={fetchFiscalDataCURP} // 👈 AQUÍ SE LLAMA A TU API
+                          >
+                            <Text style={styles.verifyButtonText}>
+                              {loading ? "Validando..." : "Verificar"}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+
+                      {/* Error debajo */}
+                      {thirdPartyData.curp &&
+                        !validateCURPWithRFC(thirdPartyData.curp, thirdPartyData.rfc).isValid && (
+                          <Text style={styles.errorText}>
+                            {validateCURPWithRFC(thirdPartyData.curp, thirdPartyData.rfc).message}
+                          </Text>
+                        )}
+                    </View>
+                  )}
+
+
                 <View style={styles.formGrid}>
                   {/* Nombre/Razón Social */}
                   <View style={styles.inputContainer}>
@@ -1295,53 +1542,6 @@ export default function FormDatosFiscalesCompleto({
                     </View>
                   )}
 
-                  {/* RFC */}
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>RFC *</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={thirdPartyData.rfc}
-                      onChangeText={handleRFCChange}
-                      placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                      placeholder="XXXX000000XXX"
-                      maxLength={thirdPartyData.es_persona_moral === true ? 12 : 13}
-                      editable={!currentLoading}
-                      autoCapitalize="characters"
-                    />
-                    {thirdPartyData.rfc && !validateRFC(thirdPartyData.rfc, thirdPartyData.es_persona_moral) && (
-                      <Text style={styles.errorText}>
-                        {thirdPartyData.es_persona_moral
-                          ? "Formato inválido: 3 letras + fecha real (AAMMDD) + 3 caracteres"
-                          : "Formato inválido: 4 letras + fecha real (AAMMDD) + 3 caracteres"}
-                      </Text>
-                    )}
-                  </View>
-
-                  {/* CURP para persona física */}
-                  {!thirdPartyData.es_persona_moral && (
-                    <View style={styles.inputContainer}>
-                      <Text style={styles.label}>CURP</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={thirdPartyData.curp}
-                        placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                        onChangeText={(text) => setThirdPartyData(prev => ({
-                          ...prev,
-                          curp: normalizeText(text)
-                        }))}
-                        placeholder="XXXX000000XXXXXXXX (opcional)"
-                        maxLength={18}
-                        editable={!currentLoading}
-                        autoCapitalize="characters"
-                      />
-                      {thirdPartyData.curp && !validateCURPWithRFC(thirdPartyData.curp, thirdPartyData.rfc).isValid && (
-                        <Text style={styles.errorText}>
-                          {validateCURPWithRFC(thirdPartyData.curp, thirdPartyData.rfc).message}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-
                   {/* Email */}
                   <View style={styles.inputContainer}>
                     <Text style={styles.label}>Correo *</Text>
@@ -1359,36 +1559,6 @@ export default function FormDatosFiscalesCompleto({
                         autoCapitalize="none"
                         editable={!currentLoading}
                       />
-                      {/* <TouchableOpacity
-                        style={[
-                          styles.verifyButton,
-                          emailVerified && { backgroundColor: 'white', borderWidth: 1, borderColor: 'green' },
-                          (!thirdPartyData.email_facturacion_text ||
-                            !validateEmail(thirdPartyData.email_facturacion_text)) &&
-                          styles.verifyButtonDisabled
-                        ]}
-                        onPress={() => {
-                          validarCorreoReceptor(thirdPartyData.email_facturacion_text);
-                          setShowEmailModal(true);
-                        }}
-                        disabled={
-                          !thirdPartyData.email_facturacion_text ||
-                          !validateEmail(thirdPartyData.email_facturacion_text) ||
-                          currentLoading ||
-                          emailVerified
-                        }
-                      >
-                        {emailVerified ? (
-                          <CheckCircle
-                            size={22}
-                            color="green"
-                            style={{ alignSelf: "center", backgroundColor: "white" }}
-                          />
-                        ) : (
-                          <Text style={styles.verifyButtonText}>Verificar</Text>
-                        )}
-                      </TouchableOpacity> */}
-
 
                     </View>
                     {thirdPartyData.email_facturacion_text && !validateEmail(thirdPartyData.email_facturacion_text) && (
@@ -1630,13 +1800,13 @@ export default function FormDatosFiscalesCompleto({
       </ScrollView>
 
       {/*Modal de c */}
-      <EmailVerificationModal
+      {/* <EmailVerificationModal
         visible={showEmailModal}
         email={EmailVerificar}
         onClose={handleCloseModal}
         onVerificationSuccess={handleVerificationSuccess}
         onSuccess={() => setEmailVerified(true)}
-      />
+      /> */}
       {renderGlobalLoading()}
     </View>
   );
@@ -1708,8 +1878,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1f2937',
     textAlign: 'left',
-    flex: 1,            
-    flexShrink: 1,      
+    flex: 1,
+    flexShrink: 1,
     flexWrap: 'wrap',
   },
   section: {
