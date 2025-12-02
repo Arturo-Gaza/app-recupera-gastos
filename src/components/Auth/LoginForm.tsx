@@ -146,12 +146,19 @@ export default function LoginForm() {
 
         await AsyncStorage.setItem("SesionSSTFull", JSON.stringify(dataSST));
 
+        console.log("la sesion es fuera", dataSST.Password_temporalSST);
+
         if (!dataSST.tieneSuscripcionActivaSST) {
           router.replace("/Planes");
-        } else if (!dataSST.DatosCompletosSST) {
+        } else if (dataSST.Password_temporalSST === true) {
+          console.log("la sesion es", dataSST.Password_temporalSST);
+          router.replace("/(auth)/AlertColaboradorScreen");
+        }
+        else if (!dataSST.DatosCompletosSST) {
           router.replace("/datosAlert");
         } else if (!dataSST.tienDatoFiscalSST) {
           router.replace("/fiscalesAlert");
+
         } else {
           router.replace("/dashboard");
         }

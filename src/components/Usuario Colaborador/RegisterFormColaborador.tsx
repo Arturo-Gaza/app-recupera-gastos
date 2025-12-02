@@ -1,16 +1,18 @@
-import { ENVIARCORREOCONF, REGISTER, VALIDAR_CODIGO_SMS, VALIDARCORREOCONF, VERIFICAR_TELEFONO } from '@/src/services/apiConstans';
+import { useSession } from '@/src/hooks/useSession';
+import { COMPLETAR_HIJO, VALIDAR_CODIGO_SMS, VERIFICAR_TELEFONO } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
-import { styles } from '@/src/styles/RegisterStyles';
+
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import { ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -34,10 +36,16 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showEmailRegisteredModal, setShowEmailRegisteredModal] = useState(false);
+  const { session, loading: sessionLoading, refreshSession } = useSession();
+  
 
   // Refs para los inputs OTP
   const emailInputRefs = useRef<Array<TextInput>>([]);
   const smsInputRefs = useRef<Array<TextInput>>([]);
+
+  const userEmail = session?.CorreoSST;
+
+  console.log("correo del ususario");
 
   // Función de validación de contraseña
   const validatePassword = (pass: string) => {
@@ -54,6 +62,12 @@ export function Register() {
       isValid: hasMinLength && hasUpperCase && hasDigit && hasSpecialChar
     };
   };
+
+  useEffect(() => {
+  if (userEmail) {
+    setCorreo(userEmail);
+  }
+}, [userEmail]);
 
   const countryCodes = [
     { code: '+52', country: 'México', flag: '🇲🇽' },
@@ -83,51 +97,17 @@ export function Register() {
   );
 
   const handleBack = () => {
-    router.back();
+     router.push('/login');
   };
 
   const handleLoginRedirect = () => {
     router.push('/login');
   };
 
-  const handleEmailSubmit = async () => {
-    const code = otpEmail.join('');
-    setLoading(true);
-    try {
-      const response = await requests.post({
-        command: VALIDARCORREOCONF,
-        data: {
-          email: correo,
-          codigo: code
-        }
-      });
-
-      const { data } = response;
-
-      if (data?.success) {
-        Alert.alert("Éxito", data.message);
-        // Lógica de éxito
-         await sendPhoneVerification(telefono);
-        if (code.length === 6) setCurrentStep('sms');
-        return data;
-      } else {
-        Alert.alert("Error", data?.message);
-        return null;
-      }
-
-    }
-    catch (error: any) {
-      console.error("Error:", error);
-      Alert.alert("Error", error?.response?.data?.message || "Error inesperado");
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSMSSubmit = async () => {
     const code = otpSMS.join('');
-    setLoading(true)
+
     try {
       const response = await requests.post({
         command: VALIDAR_CODIGO_SMS,
@@ -256,52 +236,10 @@ export function Register() {
   };
 
   // ----------------------
-  // FUNCIÓN: Enviar Correo
-  // ----------------------
-  const sendEmailVerification = async (correo: string) => {
-    try {
-      const emailResponse = await requests.post({
-        command: ENVIARCORREOCONF,
-        data: { email: correo },
-      });
-
-      const emailData = emailResponse.data;
-
-      if (emailData?.success) {
-        console.log("Correo enviado exitosamente");
-        return true;
-      } else {
-        console.warn("Respuesta inesperada del servidor:", emailData);
-        return false;
-      }
-    } catch (error: any) {
-      console.error("Error detallado al enviar correo:", {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-      });
-
-      if (error.response?.status === 500) {
-        Alert.alert(
-          "Problema del servidor",
-          "Estamos teniendo problemas técnicos. Intenta verificar tu correo más tarde."
-        );
-      } else {
-        Alert.alert(
-          "Error al enviar correo",
-          "No pudimos enviar el correo de verificación. Intenta más tarde."
-        );
-      }
-
-      return false;
-    }
-  };
-
-  // ----------------------
   // FUNCIÓN: Enviar Teléfono (SMS)
   // ----------------------
   const sendPhoneVerification = async (telefono: string) => {
-    setLoading(true);
+    setLoading(true)
     try {
       const phoneResponse = await requests.post({
         command: VERIFICAR_TELEFONO,
@@ -323,9 +261,8 @@ export function Register() {
         error?.response?.data
       );
       return false; // No detiene flujo
-    }
-    finally {
-      setLoading(false);
+    } finally{
+      setLoading(false)
     }
   };
 
@@ -339,25 +276,23 @@ export function Register() {
 
     try {
       const formData = {
-        email: correo,
+        email: userEmail,
         lada: "52",
         tel: telefono,
         password,
       };
 
       const userRegister = await requests.post({
-        command: REGISTER,
+        command: COMPLETAR_HIJO,
         data: formData,
       });
 
       const { data } = userRegister;
 
       if (data?.success) {
-        // ------ CORREO ------
-        await sendEmailVerification(correo);
 
         // ------ TELÉFONO ------
-       
+        await sendPhoneVerification(telefono);
 
         // ------ AVANZAR ------
         Alert.alert(
@@ -365,7 +300,7 @@ export function Register() {
           "Se ha enviado un código de verificación a tu correo electrónico."
         );
 
-        setCurrentStep("email");
+        setCurrentStep("sms");
       } else {
         Alert.alert("Error", data?.message || "Error en el registro");
       }
@@ -384,11 +319,6 @@ export function Register() {
     }
   };
 
-  const handleResendMail = async () => {
-    Alert.alert("Código enviado al correo", correo)
-    await sendEmailVerification(correo);
-
-  };
 
   const handleResendSMS = async () => {
     Alert.alert("Código enviado")
@@ -437,13 +367,15 @@ export function Register() {
         Correo electrónico <Text style={styles.required}>*</Text>
       </Text>
       <TextInput
-        style={styles.input}
-        value={correo}
+        style={[styles.input, { color: '#000' }]} // Asegurar color legible
+        value={userEmail}
         onChangeText={setCorreo}
         placeholder="correo@ejemplo.com"
         placeholderTextColor="rgba(0, 0, 0, 0.3)"
         keyboardType="email-address"
         autoCapitalize="none"
+        editable={false} // Esto desactiva la edición
+        selectTextOnFocus={false} // Opcional: evita que se seleccione texto al tocar
       />
 
       <Text style={styles.label}>
@@ -560,33 +492,6 @@ export function Register() {
     </ScrollView>
   );
 
-  const renderEmailVerification = () => (
-    <View style={styles.formContainer}>
-      <Text style={styles.description}>
-        Se ha enviado un código de verificación al correo:{' '}
-        <Text style={styles.highlight}>{correo}</Text>
-      </Text>
-
-      {renderOTPInput(otpEmail, true)}
-
-      <TouchableOpacity onPress={handleResendMail} style={styles.linkButton}>
-        <Text style={styles.linkText}>Reenviar código</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.button,
-          (loading || otpEmail.join('').length !== 6) && styles.buttonDisabled,
-        ]}
-        onPress={handleEmailSubmit}
-        disabled={loading || otpEmail.join('').length !== 6}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? 'Verificando...' : 'Verificar código'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
 
   const renderSMSVerification = () => (
     <View style={styles.formContainer}>
@@ -633,8 +538,6 @@ export function Register() {
     switch (currentStep) {
       case 'registrar':
         return 'Crear cuenta';
-      case 'email':
-        return 'Verificación de correo electrónico';
       case 'sms':
         return 'Verificación de número telefónico';
       case 'success':
@@ -648,8 +551,6 @@ export function Register() {
     switch (currentStep) {
       case 'registrar':
         return renderRegisterForm();
-      case 'email':
-        return renderEmailVerification();
       case 'sms':
         return renderSMSVerification();
       case 'success':
@@ -660,27 +561,26 @@ export function Register() {
   };
 
   // Overlay global de loading
-  const renderGlobalLoading = () => (
-    loading ? (
-      <View style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 999
-      }}>
-        <ActivityIndicator size="large" color="#fff" />
-        <Text style={{ color: 'white', marginTop: 10, fontSize: 16 }}>
-          Procesando...
-        </Text>
-      </View>
-    ) : null
-  );
-
+    const renderGlobalLoading = () => (
+      loading ? (
+        <View style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 999
+        }}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={{ color: 'white', marginTop: 10, fontSize: 16 }}>
+            Procesando...
+          </Text>
+        </View>
+      ) : null
+    );
 
   return (
     <KeyboardAvoidingView
@@ -712,8 +612,259 @@ export function Register() {
           onClose={() => setShowEmailRegisteredModal(false)}
         />
       </View>
-      {renderGlobalLoading()}
 
+      {renderGlobalLoading()}
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    marginTop: -60,
+    margin: 16,
+    maxWidth: 400,
+    maxHeight: '90%',
+    width: '90%',
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginHorizontal: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  backButton: {
+    marginRight: 12,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#3b82f6',
+  },
+  formContainer: {
+    gap: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: 'white',
+  },
+  inputWarning: {
+    borderColor: '#ffa726',
+  },
+  inputValid: {
+    borderColor: '#4caf50',
+  },
+  button: {
+    backgroundColor: "#1A2A6C",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  buttonDisabled: {
+    backgroundColor: '#9ca3af',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  linkButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  linkText: {
+    color: '#3b82f6',
+    fontSize: 14,
+  },
+  description: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  highlight: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3b82f6',
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 16,
+  },
+  otpInput: {
+    width: 48,
+    height: 56,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  successContainer: {
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 32,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#16a34a',
+  },
+  // Nuevos estilos para la validación de contraseña
+  requirementsContainer: {
+    marginTop: 8,
+    gap: 6,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxValid: {
+    borderColor: '#4caf50',
+    backgroundColor: '#4caf50',
+  },
+  checkboxInvalid: {
+    borderColor: '#ccc',
+    backgroundColor: '#f5f5f5',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  requirementText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  requirementTextValid: {
+    color: '#4caf50',
+    fontWeight: '500',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#ef4444',
+    marginTop: -8,
+  },
+  required: {
+    color: '#ef4444',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  inputRequired: {
+    borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
+  },
+  fieldError: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  countryCodeContainer: {
+    minWidth: 115,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    backgroundColor: 'white',
+    height: 50,
+    justifyContent: 'center',
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    color: 'black'
+  },
+  phoneInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: 'white',
+    height: 50,
+  },
+
+  passwordContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: 'white',
+    paddingRight: 50,
+    color: "#000"
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
+    padding: 4,
+  },
+  //Estilo para el logo
+  transparentCard: {
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+    borderWidth: 0,
+    marginTop: 0,
+    marginLeft: 85
+  },
+
+  logo: {
+    width: 200,
+    height: 100,
+    marginBottom: 30,
+  },
+
+  largeLogo: {
+    width: 300 * 0.8, // Más ancho
+    height: 150 * 0.8, // Más alto
+    marginBottom: 30,
+  },
+});

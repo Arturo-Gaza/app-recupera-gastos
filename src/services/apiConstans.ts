@@ -56,5 +56,5 @@ export const STRIPE_PREPAGO = 'stripe/crearPagoByPrepago'
 export const STRIPE_MENSUAL = 'stripe/crearPagoByMensual'
 export const STRIPE_CONFIRM = 'stripe/confirmStripePayment'
 export const COMPLETAR_HIJO = 'auth/completarHijo'
-
+export const VALIDA_RFC_CURP = 'checkid/buscar'
 

@@ -323,133 +323,157 @@ export default function Dashboard({ onBack }: DashboardProps) {
     }
   };
 
-  const Sidebar = () => (
-    <>
-      {sidebarVisible && (
-        <View style={styles.sidebarOverlay}>
-          <TouchableOpacity
-            style={styles.sidebarBackdrop}
-            onPress={() => setSidebarVisible(false)}
-            activeOpacity={1}
-          />
-          <View style={styles.sidebar}>
-            <View style={styles.sidebarHeader}>
-              <Text style={styles.sidebarTitle}>Menú</Text>
-              <TouchableOpacity
-                onPress={() => setSidebarVisible(false)}
-              >
-                <Text style={styles.closeButton}>✕</Text>
-              </TouchableOpacity>
+  const Sidebar = () => {
+    // Obtener el rol del usuario
+    const userRole = session?.IdRolSST;
+    const isRole3 = userRole === 3;
+    console.log("el id del rol es ", userRole)
+    return (
+      <>
+        {sidebarVisible && (
+          <View style={styles.sidebarOverlay}>
+            <TouchableOpacity
+              style={styles.sidebarBackdrop}
+              onPress={() => setSidebarVisible(false)}
+              activeOpacity={1}
+            />
+            <View style={styles.sidebar}>
+              <View style={styles.sidebarHeader}>
+                <Text style={styles.sidebarTitle}>Menú</Text>
+                <TouchableOpacity
+                  onPress={() => setSidebarVisible(false)}
+                >
+                  <Text style={styles.closeButton}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.sidebarContent}>
+                {/* Dashboard - Siempre visible */}
+                <TouchableOpacity
+                  style={[
+                    styles.sidebarItem,
+                    activeTab === "dashboard" && styles.activeSidebarItem
+                  ]}
+                  onPress={() => {
+                    handleTabChange("dashboard");
+                    setSidebarVisible(false);
+                  }}
+                >
+                  <BarChart3 size={20} color="#3b82f6" />
+                  <Text style={styles.sidebarItemText}>Dashboard</Text>
+                </TouchableOpacity>
+
+                {/* Si NO es rol 3, mostrar los elementos normales */}
+                {!isRole3 && (
+                  <>
+                    <TouchableOpacity
+                      style={[
+                        styles.sidebarItem,
+                        activeTab === "balance" && styles.activeSidebarItem
+                      ]}
+                      onPress={() => {
+                        handleTabChange("balance");
+                        setActiveBalanceSubSection("/balance/recharge");
+                        setSidebarVisible(false);
+                      }}
+                    >
+                      <Wallet size={20} color="#10b981" />
+                      <Text style={styles.sidebarItemText}>
+                        Recargar y consultar saldo
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* Datos personales - Siempre visible */}
+                <TouchableOpacity
+                  style={[
+                    styles.sidebarItem,
+                    activeTab === "datos" && styles.activeSidebarItem
+                  ]}
+                  onPress={() => {
+                    handleTabChange("datos");
+                    setSidebarVisible(false);
+                  }}
+                >
+                  <User size={20} color="#2706ffff" />
+                  <Text style={styles.sidebarItemText}>
+                    Administrar mis datos personales
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Si NO es rol 3, mostrar estos elementos */}
+                {!isRole3 && (
+                  <>
+                    <TouchableOpacity
+                      style={[
+                        styles.sidebarItem,
+                        activeTab === "receptor" && styles.activeSidebarItem
+                      ]}
+                      onPress={() => {
+                        handleTabChange("receptor");
+                        setSidebarVisible(false);
+                      }}
+                    >
+                      <UserCheck size={20} color="#000000ff" />
+                      <Text style={styles.sidebarItemText}>
+                        Administrar mis receptores
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* Configuración de cuenta - Siempre visible */}
+                <TouchableOpacity
+                  style={[
+                    styles.sidebarItem,
+                    activeTab === "cuenta" && styles.activeSidebarItem
+                  ]}
+                  onPress={() => {
+                    handleTabChange("cuenta");
+                    setSidebarVisible(false);
+                  }}
+                >
+                  <Settings2 size={20} color="#fa0000ff" />
+                  <Text style={styles.sidebarItemText}>Administrar mi cuenta</Text>
+                </TouchableOpacity>
+
+                {/* Si NO es rol 3, mostrar estos elementos */}
+                {!isRole3 && (
+                  <>
+                    <TouchableOpacity
+                      style={[
+                        styles.sidebarItem,
+                        activeTab === "colaborador" && styles.activeSidebarItem
+                      ]}
+                      onPress={() => {
+                        handleTabChange("colaborador");
+                        setSidebarVisible(false);
+                      }}
+                    >
+                      <Users size={20} color="#2c0092ff" />
+                      <Text style={styles.sidebarItemText}>
+                        Administrar mis usuarios
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                <View style={styles.sidebarDivider} />
+
+                <TouchableOpacity
+                  style={[styles.sidebarItem, styles.logoutItem]}
+                  onPress={handleLogout}
+                >
+                  <Text style={styles.logoutText}>Cerrar Sesión</Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
-
-            <ScrollView style={styles.sidebarContent}>
-              <TouchableOpacity
-                style={[
-                  styles.sidebarItem,
-                  activeTab === "dashboard" && styles.activeSidebarItem
-                ]}
-                onPress={() => {
-                  handleTabChange("dashboard");
-                  setSidebarVisible(false);
-                }}
-              >
-                <BarChart3 size={20} color="#3b82f6" />
-                <Text style={styles.sidebarItemText}>Dashboard</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.sidebarItem,
-                  activeTab === "balance" && styles.activeSidebarItem
-                ]}
-                onPress={() => {
-                  handleTabChange("balance");
-                  setActiveBalanceSubSection("/balance/recharge");
-                  setSidebarVisible(false);
-                }}
-              >
-                <Wallet size={20} color="#10b981" />
-                <Text style={styles.sidebarItemText}>
-                  Recargar y consultar saldo
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.sidebarItem,
-                  activeTab === "datos" && styles.activeSidebarItem
-                ]}
-                onPress={() => {
-                  handleTabChange("datos");
-                  setSidebarVisible(false);
-                }}
-              >
-                <User size={20} color="#2706ffff" />
-                <Text style={styles.sidebarItemText}>
-                  Administrar mis datos personales
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.sidebarItem,
-                  activeTab === "receptor" && styles.activeSidebarItem
-                ]}
-                onPress={() => {
-                  handleTabChange("receptor");
-                  setSidebarVisible(false);
-                }}
-              >
-                <UserCheck size={20} color="#000000ff" />
-                <Text style={styles.sidebarItemText}>
-                  Administrar mis receptores
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.sidebarItem,
-                  activeTab === "cuenta" && styles.activeSidebarItem
-                ]}
-                onPress={() => {
-                  handleTabChange("cuenta");
-                  setSidebarVisible(false);
-                }}
-              >
-                <Settings2 size={20} color="#fa0000ff" />
-                <Text style={styles.sidebarItemText}>Administrar mi cuenta</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.sidebarItem,
-                  activeTab === "colaborador" && styles.activeSidebarItem
-                ]}
-                onPress={() => {
-                  handleTabChange("colaborador");
-                  setSidebarVisible(false);
-                }}
-              >
-                <Users size={20} color="#2c0092ff" />
-                <Text style={styles.sidebarItemText}>
-                  Administrar mis usuarios
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.sidebarDivider} />
-
-              <TouchableOpacity
-                style={[styles.sidebarItem, styles.logoutItem]}
-                onPress={handleLogout}
-              >
-                <Text style={styles.logoutText}>Cerrar Sesión</Text>
-              </TouchableOpacity>
-            </ScrollView>
           </View>
-        </View>
-      )}
-    </>
-  );
+        )}
+      </>
+    );
+  };
 
   return (
     <View style={styles.container}>
