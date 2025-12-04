@@ -215,7 +215,7 @@ const FileUpload = ({
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsMultipleSelection: true,
-        quality: 0.8,
+        quality: 0.5,
       });
 
       if (!result.canceled && result.assets.length > 0) {
