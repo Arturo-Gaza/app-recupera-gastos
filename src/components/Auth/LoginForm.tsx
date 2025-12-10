@@ -9,6 +9,7 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Button,
   Image,
   ScrollView,
   Text,
@@ -19,11 +20,19 @@ import {
 
 
 import * as AuthSession from "expo-auth-session";
-import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import ErrorModal from "../Modales/ModalPassword";
 
-const redirectUri = Linking.createURL("auth/callback");
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes
+} from '@react-native-google-signin/google-signin';
+
+GoogleSignin.configure({
+  webClientId: "120298799063-liofb50it50njvmfmooclstgkqcpnhmo.apps.googleusercontent.com"
+});
 
 
 
@@ -38,11 +47,48 @@ export default function LoginForm() {
   const [modalVisible, setModalVisible] = useState(false);
 
 
-
-
   // ------------------------------------------------------------------
   //LOGIN CON GOOGLE (COMPLETO)
   // ------------------------------------------------------------------
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const signIn = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      if (isSuccessResponse(response)) {
+        setUserInfo(response.data);
+        console.log("Ver error", response.data)
+      } else {
+        console.log("sing in was cancelled by user")
+      }
+    } catch (error) {
+      if (isErrorWithCode(error)) {
+        switch (error.code) {
+          case statusCodes.IN_PROGRESS:
+            Alert.alert("sing in is in progress")
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            Alert.alert("Play services not available")
+            break;
+          default:
+        }
+      } else {
+        Alert.alert("an error that's not related to google sing in occurred")
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await GoogleSignin.signOut();
+      setUserInfo(null);
+      Alert.alert("Logged Out", "You have been signed out.")
+    } catch (error) {
+      console.error("Logout Error:", error);
+      Alert.alert("Error", "Failed to log out")
+    }
+  }
+
   const handleGoogleLogin = async () => {
     try {
       const redirectUri = AuthSession.makeRedirectUri({
@@ -246,19 +292,30 @@ export default function LoginForm() {
             </TouchableOpacity>
           </View>
 
-          {/* <Text style={styles.orText}>O CONTINÚA CON</Text> */}
+          <Text style={styles.orText}>O CONTINÚA CON</Text>
 
           {/*BOTÓN GOOGLE (NO CAMBIÉ ESTILO) */}
-          {/* <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-            <Ionicons name="logo-google" size={20} color="#000" />
-            <Text style={styles.googleButtonText}>Google</Text>
-          </TouchableOpacity> */}
+          {userInfo ? (<View style={styles.container}>
+            <ScrollView style={{ maxHeight: 400 }}>
+              <Text style={{ color: "Black" }}>
+                {JSON.stringify(userInfo, null, 2)}
+              </Text>
+            </ScrollView>
+
+            <Button title="Sing out" onPress={handleLogout} />
+          </View>) : (
+            <TouchableOpacity style={styles.googleButton} onPress={signIn}>
+              <Ionicons name="logo-google" size={20} color="#000" />
+              <Text style={styles.googleButtonText}>Google</Text>
+            </TouchableOpacity>
+          )}
 
           <Text style={styles.legalText}>
             Al continuar, aceptas recibir llamadas, mensajes de WhatsApp o SMS
             realizados por Recupera Gastos y sus afiliadas.
           </Text>
         </View>
+       
 
         <Text style={styles.footerText}>
           Plataforma segura para la gestión de gastos empresariales
@@ -279,3 +336,5 @@ export default function LoginForm() {
 
   );
 }
+
+
