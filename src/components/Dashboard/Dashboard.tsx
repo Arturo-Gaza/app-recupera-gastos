@@ -12,9 +12,10 @@ import {
   Wallet
 } from "lucide-react-native";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BackHandler,
+  DeviceEventEmitter,
   Image,
   ScrollView,
   Text,
@@ -71,6 +72,17 @@ export default function Dashboard({ onBack }: DashboardProps) {
       refreshSession();
     }, [])
   );
+
+  useEffect(() => {
+  const subscription = DeviceEventEmitter.addListener('sessionUpdated', (data) => {
+    console.log('Session updated event received:', data);
+    refreshSession();
+  });
+
+  return () => {
+    subscription.remove();
+  };
+}, [refreshSession]);
 
   // Datos derivados de la sesión
   const userName = session?.NombreSST;

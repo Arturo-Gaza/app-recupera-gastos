@@ -2,11 +2,13 @@ import { useSession } from "@/src/hooks/useSession";
 import { ACTUALIZAR_RECEPTOR, ELIMINAR_TICKET, IMAGEN_TICKET, PROCESAR_TICKET, RECEPTORES_BYUSER, USUARIO_GETBY_ID } from "@/src/services/apiConstans";
 import requests from "@/src/services/requests";
 import { styles } from '@/src/styles/TableTicketsStyle';
+import { router } from "expo-router";
 import { CheckCircle, ChevronDown, Download, Eye, Send, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    DeviceEventEmitter,
     FlatList,
     Image,
     Modal,
@@ -60,7 +62,7 @@ export const TicketsTable = () => {
     const [selectedValues, setSelectedValues] = useState<{ [ticketId: string]: string }>({});
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [expandedSelectors, setExpandedSelectors] = useState<{ [ticketId: string]: boolean }>({});
-    const { session, loading: sessionLoading } = useSession();
+    const { session, loading: sessionLoading, updateSession, refreshSession } = useSession();
     const userId = session?.IdUsuarioSST || 0;
     const [imagenModalVisible, setImagenModalVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -68,16 +70,17 @@ export const TicketsTable = () => {
 
 
 
+
     const fetchTickets = async () => {
         try {
             setLoading(true);
-            const response = await requests.post({ 
+            const response = await requests.post({
                 command: USUARIO_GETBY_ID,
                 data: {
-                    fecha_inicio:"",
+                    fecha_inicio: "",
                     fecha_fin: "",
                     usuario_id: userId
-                } 
+                }
             });
 
             const ticketsData = response.data?.data || [];
@@ -134,7 +137,7 @@ export const TicketsTable = () => {
                 });
                 setSelectedValues(initialSelectedValues);
             } else {
-              
+
                 const initialSelectedValues: { [ticketId: string]: string } = {};
                 tickets.forEach(ticket => {
                     initialSelectedValues[ticket.id] = String(ticket.id_receptor) || "5";
@@ -299,23 +302,55 @@ export const TicketsTable = () => {
         setShowTicketModal(true);
     };
 
-    const procesarTicket = async (ticketId: string) => {
-        try {
-            setLoading(true);
-            const response = await requests.get({
-                command: PROCESAR_TICKET + ticketId,
+
+// En TableTickets.tsx
+
+
+const procesarTicket = async (ticketId: string) => {
+    try {
+        setLoading(true);
+        
+        const response = await requests.get({
+            command: PROCESAR_TICKET + ticketId,
+        });
+
+        const nuevoSaldo = response.data?.data;
+
+        if (nuevoSaldo !== undefined && nuevoSaldo !== null) {
+            
+            
+            //Actualizar la sesión
+            await updateSession({
+                SaldoSST: Number(nuevoSaldo)
             });
-
-            Alert.alert("Éxito", `Ticket ${ticketId} procesado correctamente`);
+            
+            //REFRESCAR la sesión completamente
+            await refreshSession();
+            
+            //Emitir evento para notificar a Dashboard
+            DeviceEventEmitter.emit('sessionUpdated', { 
+                saldo: nuevoSaldo,
+                timestamp: Date.now()
+            });
+            
+            //Mostrar alerta
+            Alert.alert("Éxito", `Ticket procesado correctamente`);
+            
+            //Refrescar tickets
             await fetchTickets();
-
-        } catch (error) {
-            console.error("Error procesando ticket:", error);
-            Alert.alert("Error", "No se pudo procesar el ticket");
-        } finally {
-            setLoading(false);
+            
+            //Navegar al dashboard
+            router.push("/dashboard");
         }
-    };
+        
+    } catch (error: any) {
+        console.error("❌ Error:", error);
+        Alert.alert("Error", "No se pudo procesar el ticket");
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     const eliminarTicket = async (ticketId: string) => {
         try {
@@ -477,7 +512,7 @@ export const TicketsTable = () => {
                                 </View>
                             )}
                         </View>
-                      
+
                     </View>
                 </View>
 
