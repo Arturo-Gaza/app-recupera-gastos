@@ -9,7 +9,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Button,
   Image,
   ScrollView,
   Text,
@@ -292,9 +291,8 @@ export default function LoginForm() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.orText}>O CONTINÚA CON</Text>
+          {/* <Text style={styles.orText}>O CONTINÚA CON</Text>
 
-          {/*BOTÓN GOOGLE (NO CAMBIÉ ESTILO) */}
           {userInfo ? (<View style={styles.container}>
             <ScrollView style={{ maxHeight: 400 }}>
               <Text style={{ color: "Black" }}>
@@ -308,7 +306,7 @@ export default function LoginForm() {
               <Ionicons name="logo-google" size={20} color="#000" />
               <Text style={styles.googleButtonText}>Google</Text>
             </TouchableOpacity>
-          )}
+          )} */}
 
           <Text style={styles.legalText}>
             Al continuar, aceptas recibir llamadas, mensajes de WhatsApp o SMS
