@@ -534,11 +534,11 @@ const procesarTicket = async (ticketId: string) => {
                     <TouchableOpacity
                         style={[styles.actionButton, styles.processButton]}
                         onPress={() => handleProcess(item.id)}
-                        disabled={item.estado_id !== 1}
+                        disabled={item.estado_id !== 1 || item.id_receptor === null }
                     >
                         <Send
                             size={20}
-                            color={item.estado_id !== 1 ? "#afafafff" : "#000000ff"}
+                            color={item.estado_id !== 1 || item.id_receptor === null ? "#afafafff" : "#000000ff"}
                         />
                     </TouchableOpacity>
                     <TouchableOpacity

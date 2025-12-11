@@ -93,13 +93,8 @@ export default function CheckoutForm({ clientSecret, userEmail }: CheckoutFormPr
     console.log("fiscal actualizado dentro del useEffect:", fiscalActualizado);
 
     const timer = setTimeout(() => {
-      if (!datosActualizados) {
-        router.replace("/datosAlert");
-      } else if (!fiscalActualizado) { 
-        router.replace("/fiscalesAlert");
-      } else {
-        router.replace("/dashboard");
-      }
+      router.replace("/dashboard");
+      
     }, 2000);
 
     return () => clearTimeout(timer);

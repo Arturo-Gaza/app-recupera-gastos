@@ -627,7 +627,7 @@ export default function FormDatosFiscalesCompleto({
   };
 
   const validateAddress = (address: string): string | null => {
-    if (address.length < 1) return "La dirección debe tener al menos 1 caracteres";
+    if (address.length < 1) return "Numero Exterior debe tener al menos 1 caracteres";
     return null;
   };
 

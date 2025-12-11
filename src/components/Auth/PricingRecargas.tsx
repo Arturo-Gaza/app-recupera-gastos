@@ -70,7 +70,7 @@ const RecargasPersonales = () => {
     };
 
     const handleActivarPlan = async (planId: string) => {
-        
+
         try {
             const response = await requests.post({
                 command: ACTIVAR_PLAN + planId
@@ -147,7 +147,7 @@ const RecargasPersonales = () => {
 
     const handlePlanSelect = async (planId: string) => {
         // Navegar a la pantalla de pago con el plan seleccionado
-          if (!planId) {
+        if (!planId) {
             console.log("No viene planId en los parámetros");
         } else {
             await handleActivarPlan(String(planId));
@@ -238,7 +238,7 @@ const RecargasPersonales = () => {
                     onPress={handleOmitir}
                     style={styles.omitButton}
                 >
-                    <Text style={styles.omitButtonText}>Continuar con pruebas gratis</Text>
+                    <Text style={styles.omitButtonText}>Inicia gratis</Text>
 
                 </TouchableOpacity>
 
@@ -504,14 +504,14 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 4,
         alignSelf: 'center'
-
     },
     omitButtonText: {
         color: '#ffffffff',
         fontSize: 16,
         fontWeight: '500',
-        alignItems: 'center'
-    },
+        textAlign: 'center',  
+        flex: 1  
+    }
 });
 
 export default RecargasPersonales;
