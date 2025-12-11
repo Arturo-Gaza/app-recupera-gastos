@@ -339,7 +339,7 @@ export default function Dashboard({ onBack }: DashboardProps) {
     // Obtener el rol del usuario
     const userRole = session?.IdRolSST;
     const isRole3 = userRole === 3;
-    console.log("el id del rol es ", userRole)
+    
     return (
       <>
         {sidebarVisible && (

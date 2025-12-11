@@ -94,6 +94,7 @@ interface SuccessModalProps {
   message: string;
   buttonText?: string;
   icon?: React.ReactNode;
+  onConfirm?: () => void;
 }
 
 export function SuccessModal({
@@ -103,7 +104,10 @@ export function SuccessModal({
   message,
   buttonText = "Cerrar",
   icon,
+  onConfirm
 }: SuccessModalProps) {
+
+
   return (
     <Modal visible={isOpen} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -112,7 +116,10 @@ export function SuccessModal({
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
 
-          <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={onClose}>
+           <TouchableOpacity
+            style={[styles.button, styles.confirmButton]}
+            onPress={onConfirm} 
+          >
             <Text style={styles.confirmText}>{buttonText}</Text>
           </TouchableOpacity>
         </View>

@@ -8,6 +8,7 @@ import {
     VALIDAR_CORREO_INHABILITAR
 } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
+import { router } from 'expo-router';
 import { ArrowLeftIcon, Eye, EyeOff, Lock, Slash, Trash2, User } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import {
@@ -31,6 +32,23 @@ interface AccountManagementProps {
 const Card = ({ children, style }: any) => (
     <View style={[styles.card, style]}>{children}</View>
 );
+
+//Validacion de password
+const validatePassword = (pass: string) => {
+  const hasMinLength = pass.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(pass);
+  const hasDigit = /[0-9]/.test(pass);
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass);
+
+  return {
+    hasMinLength,
+    hasUpperCase,
+    hasDigit,
+    hasSpecialChar,
+    isValid: hasMinLength && hasUpperCase && hasDigit && hasSpecialChar
+  };
+};
+
 
 // Componente Button
 const Button = ({ children, onPress, disabled, style, variant = 'default' }: any) => (
@@ -89,6 +107,9 @@ const InputOTP = ({ length = 6, value, onChange }: any) => {
         inputRefs.current = inputRefs.current.slice(0, length);
     }, [length]);
 
+
+      
+
     return (
         <View style={styles.otpContainer}>
             {Array.from({ length }, (_, index) => (
@@ -115,33 +136,81 @@ const InputOTP = ({ length = 6, value, onChange }: any) => {
 };
 
 // Componente PasswordInput
-const PasswordInput = ({ value, onChange, placeholder }: any) => {
+const PasswordInput = ({ value, onChange, placeholder, showValidation = false }: any) => {
     const [showPassword, setShowPassword] = useState(false);
 
+    const passwordValidation = validatePassword(value);
+
+    const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
+        <View style={styles.requirementItem}>
+            <View style={[
+                styles.checkbox,
+                met ? styles.checkboxValid : styles.checkboxInvalid
+            ]}>
+                <Text style={styles.checkmark}>{met ? '✓' : ''}</Text>
+            </View>
+            <Text style={[
+                styles.requirementText,
+                met && styles.requirementTextValid
+            ]}>
+                {text}
+            </Text>
+        </View>
+    );
+
     return (
-        <View style={styles.passwordContainer}>
-            <TextInput
-                style={styles.passwordInput}
-                value={value}
-                onChangeText={onChange}
-                placeholder={placeholder}
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-            />
-            <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() => setShowPassword(!showPassword)}
-            >
-                {showPassword ? (
-                    <EyeOff size={20} color="#666" />
-                ) : (
-                    <Eye size={20} color="#666" />
-                )}
-            </TouchableOpacity>
+        <View>
+            <View style={styles.passwordContainer}>
+                <TextInput
+                    style={[
+                        styles.passwordInput,
+                        value.length > 0 && !passwordValidation.isValid && styles.inputWarning,
+                        passwordValidation.isValid && styles.inputValid
+                    ]}
+                    value={value}
+                    onChangeText={onChange}
+                    placeholder={placeholder}
+                    placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                />
+                <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowPassword(!showPassword)}
+                >
+                    {showPassword ? (
+                        <EyeOff size={20} color="#666" />
+                    ) : (
+                        <Eye size={20} color="#666" />
+                    )}
+                </TouchableOpacity>
+            </View>
+
+            {/* Validación de requisitos de contraseña */}
+            {showValidation && value.length > 0 && !passwordValidation.isValid && (
+                <View style={styles.requirementsContainer}>
+                    <RequirementItem
+                        met={passwordValidation.hasMinLength}
+                        text="Mínimo 8 caracteres"
+                    />
+                    <RequirementItem
+                        met={passwordValidation.hasUpperCase}
+                        text="Al menos una mayúscula"
+                    />
+                    <RequirementItem
+                        met={passwordValidation.hasDigit}
+                        text="Al menos un dígito"
+                    />
+                    <RequirementItem
+                        met={passwordValidation.hasSpecialChar}
+                        text="Al menos un carácter especial"
+                    />
+                </View>
+            )}
         </View>
     );
 };
+
 
 // Componente SuccessModal
 const SuccessModal = ({ isOpen, onClose, title, message, buttonText }: any) => (
@@ -255,23 +324,44 @@ export function AccountManagement({ activeSubSection, onBack }: AccountManagemen
         } finally { setLoading(false); }
     };
 
-    const handlePasswordChange = async () => {
-        if (newPassword !== confirmPassword) { setErrorMessage('Contraseñas no coinciden'); setShowErrorModal(true); return; }
-        if (newPassword.length < 8) { setErrorMessage('La contraseña debe tener al menos 8 caracteres'); setShowErrorModal(true); return; }
-        setLoading(true);
-        try {
-            await requests.post({ command: CAMBIO_PASSWORD, data: { email: userEmail, codigo: otpCode, nuevaPass: newPassword } });
-            setSuccessMessage("Contraseña actualizada");
-            setShowSuccessModal(true);
-            setNewPassword(''); setConfirmPassword('');
-        } catch {
-            setErrorMessage("No se pudo actualizar la contraseña");
-            setShowErrorModal(true);
-        } finally {
-            setLoading(false);
-            setShowPasswordModal(false);
-        }
-    };
+  const handlePasswordChange = async () => {
+    const passwordValidation = validatePassword(newPassword);
+    
+    if (newPassword !== confirmPassword) { 
+        setErrorMessage('Las contraseñas no coinciden'); 
+        setShowErrorModal(true); 
+        return; 
+    }
+    
+    if (!passwordValidation.isValid) { 
+        setErrorMessage('La contraseña debe cumplir con todos los requisitos de seguridad'); 
+        setShowErrorModal(true); 
+        return; 
+    }
+    
+    setLoading(true);
+    try {
+        await requests.post({ 
+            command: CAMBIO_PASSWORD, 
+            data: { 
+                email: userEmail, 
+                codigo: otpCode, 
+                nuevaPass: newPassword 
+            } 
+        });
+        setSuccessMessage("Contraseña actualizada exitosamente");
+        setShowSuccessModal(true);
+        setNewPassword(''); 
+        setConfirmPassword('');
+        handleLogout();
+    } catch (error: any) {
+        setErrorMessage(error?.response?.data?.message || "No se pudo actualizar la contraseña");
+        setShowErrorModal(true);
+    } finally {
+        setLoading(false);
+        setShowPasswordModal(false);
+    }
+};
 
     const handleBlockConfirm = () => { setShowBlockModal(false); setShowBlockConfirmModal(true); }
     const handleBlockAccount = async () => {
@@ -280,11 +370,18 @@ export function AccountManagement({ activeSubSection, onBack }: AccountManagemen
             await requests.post({ command: BLOCKEAR_CUENTA, data: { email: userEmail, codigo: otpCode } });
             setSuccessMessage("Cuenta bloqueada");
             setShowSuccessModal(true);
+            handleLogout();
         } catch { setErrorMessage("Error al bloquear la cuenta"); setShowErrorModal(true); } finally { setLoading(false); }
     };
 
     const handleSendDelete = async () => { setCurrentAction('delete'); setOtpCode(''); setShowOtpModal(true); }
     const handleDeleteAccount = async () => { setSuccessMessage("Cuenta eliminada"); setShowSuccessModal(true); }
+
+    const handleLogout = () => {
+    
+        router.dismissAll();
+        router.replace("/login");
+      };
 
     // =================== Secciones ===================
     const renderSection = (title: string, subtitle: string, description: string, action: () => void, buttonColor?: string) => (
@@ -482,51 +579,58 @@ export function AccountManagement({ activeSubSection, onBack }: AccountManagemen
                 </Modal>
 
                 {/* Password Modal */}
-                <Modal visible={showPasswordModal} transparent animationType="fade">
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Nueva Contraseña</Text>
-                            <Text style={styles.modalDescription}>
-                                Ingresa tu nueva contraseña
-                            </Text>
+             <Modal visible={showPasswordModal} transparent animationType="fade">
+    <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Nueva Contraseña</Text>
+            <Text style={styles.modalDescription}>
+                Ingresa tu nueva contraseña
+            </Text>
 
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Nueva contraseña</Text>
-                                <PasswordInput
-                                    value={newPassword}
-                                    onChange={setNewPassword}
-                                    placeholder="Ingresa tu nueva contraseña"
-                                />
-                            </View>
+            <View style={styles.inputContainer}>
+                <Text style={styles.label}>Nueva contraseña</Text>
+                <PasswordInput
+                    value={newPassword}
+                    onChange={setNewPassword}
+                    placeholder="Ingresa tu nueva contraseña"
+                    showValidation={true}
+                />
+                {confirmPassword && newPassword !== confirmPassword && (
+                    <Text style={styles.errorText}>Las contraseñas no coinciden</Text>
+                )}
+            </View>
 
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>Confirmar contraseña</Text>
-                                <PasswordInput
-                                    value={confirmPassword}
-                                    onChange={setConfirmPassword}
-                                    placeholder="Confirma tu nueva contraseña"
-                                />
-                            </View>
+            <View style={styles.inputContainer}>
+                <Text style={styles.label}>Confirmar contraseña</Text>
+                <PasswordInput
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    placeholder="Confirma tu nueva contraseña"
+                    showValidation={false}
+                />
+            </View>
 
-                            <View style={styles.modalActions}>
-                                <Button
-                                    variant="ghost"
-                                    onPress={() => setShowPasswordModal(false)}
-                                    style={styles.modalActionButton}
-                                >
-                                    Cancelar
-                                </Button>
-                                <Button
-                                    onPress={handlePasswordChange}
-                                    style={styles.modalActionButton}
-                                    disabled={loading || !newPassword || !confirmPassword}
-                                >
-                                    {loading ? "Actualizando..." : "Cambiar contraseña"}
-                                </Button>
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
+            <View style={styles.modalActions}>
+                <Button
+                    variant="ghost"
+                    onPress={() => setShowPasswordModal(false)}
+                    style={styles.modalActionButton}
+                >
+                    Cancelar
+                </Button>
+                <Button
+                    onPress={handlePasswordChange}
+                    style={styles.modalActionButton}
+                    disabled={loading || !newPassword || !confirmPassword || 
+                             (validatePassword(newPassword) && !validatePassword(newPassword).isValid) || 
+                             newPassword !== confirmPassword}
+                >
+                    {loading ? "Actualizando..." : "Cambiar contraseña"}
+                </Button>
+            </View>
+        </View>
+    </View>
+</Modal>
 
                 {/* Block Confirmation Modal */}
                 <Modal visible={showBlockModal} transparent animationType="fade">
@@ -587,6 +691,7 @@ export function AccountManagement({ activeSubSection, onBack }: AccountManagemen
                 <SuccessModal
                     isOpen={showSuccessModal}
                     onClose={() => setShowSuccessModal(false)}
+                    onConfirm={handleLogout}
                     title="¡Éxito!"
                     message={successMessage}
                     buttonText="Continuar"
@@ -747,7 +852,10 @@ const styles = StyleSheet.create({
     },
     modalActionButton: {
         flex: 1,
-        padding: 12,
+        padding: 7,
+        height: 50,
+        alignItems: 'center',
+        justifyContent: 'center'
     },
     modalButton: {
         minWidth: 80,
@@ -834,5 +942,53 @@ const styles = StyleSheet.create({
     },
     textChange: {
         color: 'white'
-    }
+    },
+     inputWarning: {
+        borderColor: '#ef4444',
+    },
+    inputValid: {
+        borderColor: '#22c55e',
+    },
+    requirementsContainer: {
+        marginTop: 8,
+        gap: 4,
+    },
+    requirementItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    checkbox: {
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxValid: {
+        borderColor: '#22c55e',
+        backgroundColor: '#22c55e',
+    },
+    checkboxInvalid: {
+        borderColor: '#d1d5db',
+        backgroundColor: 'transparent',
+    },
+    checkmark: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    requirementText: {
+        fontSize: 12,
+        color: '#6b7280',
+    },
+    requirementTextValid: {
+        color: '#22c55e',
+    },
+    errorText: {
+        fontSize: 12,
+        color: 'red',
+        marginTop: 4,
+    },
 });
