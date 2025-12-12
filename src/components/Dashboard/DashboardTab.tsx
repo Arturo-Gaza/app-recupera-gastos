@@ -1,3 +1,4 @@
+import { useSession } from '@/src/hooks/useSession';
 import { SOLICITUD_DASHBOARD } from '@/src/services/apiConstans';
 import requests from '@/src/services/requests';
 import { styles } from '@/src/styles/DashboardTabStyle';
@@ -86,18 +87,22 @@ export function DashboardTab() {
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  // ✅ NUEVOS ESTADOS CORREGIDOS PARA BARRAS
+  // NUEVOS ESTADOS CORREGIDOS PARA BARRAS
   const [verticalBarData, setVerticalBarData] = useState<any[]>([]);
   const [maxBarValue, setMaxBarValue] = useState(10);
+  const { session, loading: sessionLoading, refreshSession } = useSession();
+  const userId = session?.IdUsuarioSST;
 
   const fetchData = async () => {
+    console.log("id de usuario", userId)
     setLoading(true);
+    
     try {
       const response = await requests.post({
         command: SOLICITUD_DASHBOARD,
         data: {
           ...fechaData,
-          usuario_id: "" // Agregar el usuario_id vacío como requeriste
+          usuario_id: userId
         }
       });
 

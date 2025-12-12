@@ -344,7 +344,7 @@ const procesarTicket = async (ticketId: string) => {
         }
         
     } catch (error: any) {
-        console.error("❌ Error:", error);
+        console.error("Error:", error);
         Alert.alert("Error", "No se pudo procesar el ticket");
     } finally {
         setLoading(false);

@@ -799,7 +799,9 @@ export function ForgotPasswordForm({ onBack = () => { } }: ForgotPasswordFormPro
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Card style={styles.card}>
           <View style={styles.header}>
-            <Button variant="ghost" onPress={handleBack} style={styles.backButton}>
+            <Button variant="ghost" 
+            onPress={handleBack} 
+            style={styles.backButton}>
               <ArrowLeftIcon />
             </Button>
             <Text style={styles.title}>{getStepTitle()}</Text>
